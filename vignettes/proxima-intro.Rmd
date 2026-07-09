@@ -1,0 +1,138 @@
+---
+title: "Proximity matrices as statistical objects"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Proximity matrices as statistical objects}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_rf <- requireNamespace("randomForest", quietly = TRUE)
+```
+
+A random forest partitions the predictor space many times over. Two observations
+that keep landing in the same leaf are, as far as the forest is concerned, the
+same kind of observation. Collecting that co-occurrence over every tree gives
+the *proximity matrix*
+
+$$P_{ij} = \frac{1}{B} \sum_{b=1}^{B} \mathbb{I}\left[\ell_b(x_i) = \ell_b(x_j)\right],$$
+
+where $\ell_b(x)$ is the leaf of tree $b$ reached by $x$.
+
+Most implementations treat $P$ as a by-product, handed back on request and
+otherwise ignored. `proxima` treats it as the object of interest.
+
+## Extracting a proximity matrix
+
+```{r, eval = has_rf}
+library(proxima)
+
+set.seed(1)
+rf <- randomForest::randomForest(
+  Species ~ ., data = iris, ntree = 200, keep.inbag = TRUE
+)
+
+px <- proximity(rf, newdata = iris)
+px
+```
+
+`randomForest` does not keep its training data, so `newdata` has to be supplied.
+
+## Diagnostics
+
+`summary()` reports what the matrix looks like and whether the dissimilarity it
+induces can be embedded in a Euclidean space — the condition under which
+classical multidimensional scaling of the proximity is exact rather than
+approximate.
+
+```{r, eval = has_rf}
+summary(px)
+```
+
+The matrix is mostly zeros. That is not a defect: most pairs of irises never
+share a leaf, and the sparsity is what makes the block structure of the matrix
+informative.
+
+## In-bag against out-of-bag
+
+The definition above averages over *all* trees, including the trees that were
+fitted on $i$ and $j$. Those trees have seen both observations and are inclined
+to separate them correctly, which inflates the proximity of same-class pairs.
+Restricting the average to the trees for which both observations are
+out-of-bag removes that bias.
+
+```{r, eval = has_rf}
+px_oob <- proximity(rf, newdata = iris, type = "oob")
+px_oob
+```
+
+The two matrices agree closely here, because 200 trees leave every pair
+out-of-bag together in plenty of trees:
+
+```{r, eval = has_rf}
+cor(px[upper.tri(px)], px_oob[upper.tri(px_oob)])
+```
+
+With few trees the out-of-bag denominator can be empty for some pairs. Those
+entries come back as `NA`, not as `0`: the forest has no evidence about the
+pair, which is a different statement from "the pair is maximally dissimilar".
+
+```{r, eval = has_rf}
+set.seed(1)
+small <- randomForest::randomForest(
+  Species ~ ., data = iris, ntree = 3, keep.inbag = TRUE
+)
+sum(is.na(proximity(small, newdata = iris, type = "oob")))
+```
+
+## The out-of-bag proximity is not a kernel
+
+Debiasing the proximity costs something, and the price is worth stating
+plainly. The in-bag proximity is an average of matrices $Z_b Z_b^{\top}$, where
+$Z_b$ is the leaf-membership indicator of tree $b$. Each term is a Gram matrix,
+so the average is positive semi-definite, and $\sqrt{1 - P}$ is Euclidean.
+
+The out-of-bag proximity divides each entry by a *different* denominator — the
+number of trees in which that particular pair was jointly out-of-bag. The result
+is no longer an average of Gram matrices and need not be positive
+semi-definite:
+
+```{r, eval = has_rf}
+c(
+  inbag = min(eigen(unclass(px), symmetric = TRUE, only.values = TRUE)$values),
+  oob   = min(eigen(unclass(px_oob), symmetric = TRUE, only.values = TRUE)$values)
+)
+```
+
+The in-bag minimum is zero up to rounding; the out-of-bag one is not close to
+it. `summary()` reports this rather than letting it pass silently:
+
+```{r, eval = has_rf}
+summary(px)$euclidean
+summary(px_oob)$euclidean
+```
+
+This matters downstream. Classical multidimensional scaling of the out-of-bag
+dissimilarity has negative eigenvalues, so its low-dimensional configuration is
+an approximation of something that has no exact Euclidean representation, and
+any method that assumes a kernel — including centered kernel alignment — needs
+an explicit correction first. Choose `type = "oob"` for an unbiased estimate of
+the proximities themselves, and `type = "inbag"` when you need the geometry.
+
+## From proximity to dissimilarity
+
+```{r, eval = has_rf}
+d <- as.dist(px)
+mds <- cmdscale(d, k = 2)
+plot(mds, col = iris$Species, pch = 19, xlab = "", ylab = "",
+     main = "MDS of the forest proximity")
+```
+
+## What comes next
+
+The inference layer — comparing two proximity matrices with a Mantel test,
+partitioning their variation with PERMANOVA, aligning them with CKA — is the
+subject of `vignette("comparing-forests")`. Scaling past a few thousand
+observations is the subject of `vignette("large-n")`.

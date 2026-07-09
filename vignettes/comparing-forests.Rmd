@@ -1,0 +1,70 @@
+---
+title: "Comparing forests through their proximities"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Comparing forests through their proximities}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+> **Status.** The inference layer is scheduled for phase F2 of the roadmap. This
+> vignette fixes the interface and the questions it is meant to answer; the code
+> below does not run yet.
+
+Two forests fitted on the same data with different hyperparameters represent
+that data differently. The question "how differently?" has no answer in the
+usual toolkit, because the objects being compared are $n \times n$ matrices
+rather than vectors of predictions.
+
+## Correlation between two proximity matrices
+
+The Mantel test correlates the off-diagonal entries of two matrices and gets its
+null distribution by permuting the rows and columns of one of them together —
+which preserves the dependence induced by the matrix structure, as an ordinary
+permutation of the entries would not.
+
+```{r}
+library(proxima)
+
+px1 <- proximity(rf_shallow, newdata = df)
+px2 <- proximity(rf_deep, newdata = df)
+
+mantel_test(px1, px2, n_perm = 999)
+```
+
+## How much of the structure is the response?
+
+```{r}
+permanova(px1, ~ y + region, data = df)
+```
+
+## Alignment of representations
+
+`cka()` treats each proximity matrix as a kernel and measures the alignment of
+the two implied feature spaces. It is invariant to isotropic rescaling and to
+orthogonal transformation, which is why it has become the standard way of
+comparing learned representations in the deep learning literature. Applying it
+to forests puts ensemble explainability and representation similarity on the
+same footing.
+
+```{r}
+cka(px1, px2)
+protest(px1, px2)
+```
+
+## Comparing a forest with its explanation
+
+The motivating case: `e2tree` approximates a forest with a single tree. Whether
+that tree preserves the forest's view of the data is exactly a question about
+two proximity matrices.
+
+```{r}
+px_forest <- proximity(rf, newdata = df)
+px_e2tree <- proximity(e2tree_fit, newdata = df)
+
+mantel_test(px_forest, px_e2tree)
+```
