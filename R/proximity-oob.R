@@ -46,6 +46,12 @@ proximity_from_nodes <- function(nodes, inbag = NULL) {
     stopifnot(nrow(inbag) == n, ncol(inbag) == B)
   }
 
+  # Engines disagree on how they label leaves: randomForest counts from one,
+  # ranger returns the node index of a tree whose internal nodes are numbered
+  # too, and xgboost counts from zero. Only equality within a tree matters, so
+  # slide each tree's labels down to start at one.
+  nodes <- nodes - rep(apply(nodes, 2L, min) - 1L, each = n)
+
   # Give every tree its own block of leaf columns, so that leaf 3 of tree 1 and
   # leaf 3 of tree 2 never collide.
   offsets <- c(0L, cumsum(apply(nodes, 2L, max)))
@@ -79,7 +85,7 @@ proximity_from_nodes <- function(nodes, inbag = NULL) {
 #' agreements and admissible comparisons. It is quadratic in `n` and linear in
 #' `B` with R's constant factor, so it is far too slow to ship, but it depends
 #' on nothing but base R and it is the yardstick against which
-#' [proximity_from_nodes()] is tested.
+#' `proximity_from_nodes()` is tested.
 #'
 #' Do not delete it because it is unused in the package proper: it is used by
 #' `test-proximity-engine.R`, and an optimisation that cannot be checked against

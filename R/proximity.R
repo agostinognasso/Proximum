@@ -116,9 +116,63 @@ proximity.randomForest <- function(object,
 }
 
 #' @describeIn proximity Method for forests fitted with `ranger::ranger()`.
+#'
+#'   Requires the forest to have been kept (`write.forest = TRUE`, the default),
+#'   and `keep.inbag = TRUE` for `type = "oob"`. `ranger` stores the bootstrap
+#'   counts as a list of one vector per tree rather than as a matrix.
+#'
+#'   The proximity of a `ranger` forest and the proximity of a `randomForest`
+#'   forest are the same statistic computed on two different ensembles, so they
+#'   are directly comparable: whether two implementations of "the same" forest
+#'   represent the data the same way is a question the inference layer of phase
+#'   F2 can answer.
 #' @export
 proximity.ranger <- function(object, newdata = NULL, type = c("inbag", "oob"), ...) {
-  not_implemented("proximity.ranger", "F1")
+  type <- match.arg(type)
+
+  if (is.null(object$forest)) {
+    stop(
+      "The forest was discarded at fitting time. Refit with ",
+      "`write.forest = TRUE` so that terminal nodes can be recovered.",
+      call. = FALSE
+    )
+  }
+  if (is.null(newdata)) {
+    stop(
+      "`newdata` is required: a ranger fit does not store its training data. ",
+      "Pass the data frame the forest was fitted on.",
+      call. = FALSE
+    )
+  }
+
+  inbag <- NULL
+  if (type == "oob") {
+    if (is.null(object$inbag.counts)) {
+      stop(
+        "`type = \"oob\"` requires a forest fitted with `keep.inbag = TRUE`.",
+        call. = FALSE
+      )
+    }
+    inbag <- do.call(cbind, object$inbag.counts)
+    if (nrow(inbag) != nrow(newdata)) {
+      stop(
+        "`type = \"oob\"` is only defined on the training data: `newdata` has ",
+        nrow(newdata), " rows but the forest was fitted on ", nrow(inbag), ".",
+        call. = FALSE
+      )
+    }
+  }
+
+  nodes <- stats::predict(object, data = newdata, type = "terminalNodes")$predictions
+  P <- proximity_from_nodes(nodes, inbag = inbag)
+  dimnames(P) <- list(rownames(newdata), rownames(newdata))
+
+  new_proximity(
+    P,
+    engine = "ranger",
+    n_trees = object$num.trees,
+    prox_type = type
+  )
 }
 
 #' Which proximity did randomForest store?
@@ -180,6 +234,11 @@ print.proximity <- function(x, ...) {
   n_na <- sum(is.na(x[upper.tri(x)]))
   if (n_na > 0L) {
     cat("  missing:", n_na, "pairs never co-occurred out-of-bag\n")
+  }
+  correction <- attr(x, "psd_correction")
+  if (!is.null(correction) && !identical(unname(correction[1]), "none")) {
+    cat("  repaired:", correction[["method"]],
+        "( smallest eigenvalue was", format(as.numeric(correction[["lambda_min"]]), digits = 3), ")\n")
   }
   invisible(x)
 }

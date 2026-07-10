@@ -1,5 +1,18 @@
 # proxima 0.0.0.9000
 
+## New
+
+* `proximity()` gains a method for `ranger` fits, with the same in-bag and
+  out-of-bag definitions. The leaf co-occurrence engine now normalises each
+  tree's leaf labels, since engines disagree on where they start counting.
+  On `iris`, the in-bag proximities of a 300-tree `randomForest` and a 300-tree
+  `ranger` forest correlate at 0.998.
+* `make_psd()` projects an indefinite proximity onto the cone of positive
+  semi-definite matrices, by `"clip"`, `"flip"` or `"shift"`. The out-of-bag
+  proximity is not a kernel, so centered kernel alignment, the RV coefficient
+  and kernel PCA all need this first. The correction is recorded on the object
+  and shown by `print()`.
+
 ## Correctness
 
 * `proximity()` no longer relabels the matrix stored by `randomForest`.

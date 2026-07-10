@@ -2,10 +2,17 @@
 "_PACKAGE"
 
 ## usethis namespace: start
-#' @importFrom ggplot2 autoplot
 #' @importFrom stats as.dist
 ## usethis namespace: end
 NULL
+
+# Registering `autoplot()` methods is not enough: importing the generic makes it
+# visible inside the package, not to the user who attached it. Re-exporting is
+# what makes `autoplot(px)` work after `library(proxima)`.
+
+#' @importFrom ggplot2 autoplot
+#' @export
+ggplot2::autoplot
 
 #' Signal that a planned feature has not landed yet
 #'

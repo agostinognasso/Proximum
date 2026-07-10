@@ -62,18 +62,25 @@ proximity is not a kernel, and `summary()` says so. See
 
 ## Status
 
-Early development. The proximity extractor, the dissimilarity transforms and the
-Euclidean diagnostics work; the inference, stability and scalability layers are
-declared, documented and not yet implemented — calling them raises an error that
-says which phase they belong to.
+Early development. Extraction from `randomForest` and `ranger`, the
+dissimilarity transforms, the Euclidean diagnostics and the positive
+semi-definite repair all work; the inference, stability and scalability layers
+are declared, documented and not yet implemented — calling them raises an error
+that says which phase they belong to.
 
 | Phase | Content | State |
 |---|---|---|
-| F1 | Unified extraction, `proximity` object, transforms | partly done |
+| F1 | `randomForest` and `ranger`, `proximity` object, transforms, `make_psd()` | mostly done |
 | F2 | Mantel, PERMANOVA, Procrustes, CKA | declared |
 | F3 | Sparsity, Nystrom, stability, `n_trees_required()` | declared |
 | F4 | `autoplot()`, vignettes, pkgdown | declared |
 | F5 | CRAN, JSS paper | — |
+
+The proximity is computed as a sparse Gram matrix, `P = Z Z'/B` with `Z` the
+leaf indicator, rather than by looping over trees. On 300 trees and 1500
+observations that is 0.16 s instead of 13 s — and the same identity is why the
+in-bag proximity is positive semi-definite while the out-of-bag one, an
+elementwise quotient of two Gram matrices, is not.
 
 ## Related work
 

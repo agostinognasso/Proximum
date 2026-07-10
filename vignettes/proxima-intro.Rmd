@@ -147,6 +147,38 @@ any method that assumes a kernel — including centered kernel alignment — nee
 an explicit correction first. Choose `type = "oob"` for an unbiased estimate of
 the proximities themselves, and `type = "inbag"` when you need the geometry.
 
+When you need both, `make_psd()` projects the out-of-bag matrix onto the cone of
+positive semi-definite matrices and records what it did:
+
+```{r, eval = has_rf}
+repaired <- make_psd(px_oob, method = "clip")
+repaired
+summary(repaired)$euclidean
+```
+
+Three corrections are offered. `"clip"` discards the negative directions and is
+the nearest positive semi-definite matrix in Frobenius norm; `"flip"` keeps them
+with their sign reversed; `"shift"` adds a constant to the diagonal, which is
+the only one of the three that leaves every off-diagonal proximity exactly where
+it was. None is right in general, which is why the choice is yours and is
+recorded on the object.
+
+## Other engines
+
+The proximity is a property of the ensemble, not of the package that fitted it.
+`proxima` extracts it from `ranger` with the same definitions and the same
+out-of-bag handling:
+
+```{r, eval = requireNamespace("ranger", quietly = TRUE)}
+set.seed(1)
+rg <- ranger::ranger(Species ~ ., data = iris, num.trees = 200, keep.inbag = TRUE)
+proximity(rg, newdata = iris)
+```
+
+Because both engines produce the same object, "do two implementations of the
+same forest represent the data the same way?" becomes a question the inference
+layer can answer, rather than a question nobody can ask.
+
 ## From proximity to dissimilarity
 
 ```{r, eval = has_rf}

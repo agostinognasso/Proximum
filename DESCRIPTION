@@ -21,6 +21,7 @@ Suggests:
     covr,
     knitr,
     randomForest,
+    ranger,
     rmarkdown,
     testthat (>= 3.0.0)
 VignetteBuilder:

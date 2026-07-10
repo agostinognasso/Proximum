@@ -71,6 +71,16 @@ Using \code{type = "oob"} requires \code{keep.inbag = TRUE} at fitting time.
 
 \item \code{proximity(ranger)}: Method for forests fitted with \code{ranger::ranger()}.
 
+Requires the forest to have been kept (\code{write.forest = TRUE}, the default),
+and \code{keep.inbag = TRUE} for \code{type = "oob"}. \code{ranger} stores the bootstrap
+counts as a list of one vector per tree rather than as a matrix.
+
+The proximity of a \code{ranger} forest and the proximity of a \code{randomForest}
+forest are the same statistic computed on two different ensembles, so they
+are directly comparable: whether two implementations of "the same" forest
+represent the data the same way is a question the inference layer of phase
+F2 can answer.
+
 }}
 \seealso{
 \code{\link[=as.dist.proximity]{as.dist.proximity()}} to obtain the induced dissimilarity,

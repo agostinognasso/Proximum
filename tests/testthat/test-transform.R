@@ -43,6 +43,12 @@ test_that("double_centre matches the textbook J D^2 J form it replaces", {
   expect_equal(double_centre(d), -0.5 * J %*% (D^2) %*% J, ignore_attr = TRUE)
 })
 
+test_that("autoplot is exported, not merely imported", {
+  # Importing the ggplot2 generic makes it visible inside the package; only
+  # re-exporting it makes `autoplot(px)` work after `library(proxima)`.
+  expect_true("autoplot" %in% getNamespaceExports("proxima"))
+})
+
 test_that("double_centre keeps the observation labels", {
   D <- as.matrix(stats::dist(matrix(1:6, ncol = 2)))
   dimnames(D) <- list(letters[1:3], letters[1:3])
