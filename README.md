@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file. -->
 
-# proxima
+# Proximum
 
 <!-- badges: start -->
 
@@ -13,7 +13,7 @@ you and then leave you to it: there is no way in R to test whether two
 forests represent the data the same way, to ask how many trees a stable
 proximity needs, or to compute the thing at all when `n` is large.
 
-`proxima` treats the proximity matrix as a first-class statistical
+`Proximum` treats the proximity matrix as a first-class statistical
 object — with inference, stability diagnostics, scalable approximations
 and dedicated visualisations — rather than as a by-product of the model.
 
@@ -28,13 +28,13 @@ Not on CRAN yet.
 
 ``` r
 # install.packages("pak")
-pak::pak("proxima")
+pak::pak("Proximum")
 ```
 
 ## Usage
 
 ``` r
-library(proxima)
+library(Proximum)
 
 set.seed(1)
 rf <- randomForest::randomForest(
@@ -57,7 +57,7 @@ summary(px)
 Switching to `type = "oob"` removes the optimistic bias of the in-bag
 definition, at the cost of positive semi-definiteness — the out-of-bag
 proximity is not a kernel, and `summary()` says so. See
-`vignette("proxima-intro")`.
+`vignette("Proximum-intro")`.
 
 ## Status
 
@@ -85,5 +85,5 @@ out-of-bag one, an elementwise quotient of two Gram matrices, is not.
 
 - [`e2tree`](https://cran.r-project.org/package=e2tree) — explains a
   forest with a single tree, built on the same similarity structure.
-- `rankimp` — which variables drive the representation `proxima`
+- `rankimp` — which variables drive the representation `Proximum`
   describes.

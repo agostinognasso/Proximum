@@ -45,8 +45,8 @@ test_that("double_centre matches the textbook J D^2 J form it replaces", {
 
 test_that("autoplot is exported, not merely imported", {
   # Importing the ggplot2 generic makes it visible inside the package; only
-  # re-exporting it makes `autoplot(px)` work after `library(proxima)`.
-  expect_true("autoplot" %in% getNamespaceExports("proxima"))
+  # re-exporting it makes `autoplot(px)` work after `library(Proximum)`.
+  expect_true("autoplot" %in% getNamespaceExports("Proximum"))
 })
 
 test_that("double_centre keeps the observation labels", {

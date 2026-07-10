@@ -43,7 +43,7 @@ proximity <- function(object, ...) {
 #'   Beware that the stored matrix is *not* the in-bag proximity by default:
 #'   `randomForest()` sets `oob.prox = proximity`, so asking for `proximity =
 #'   TRUE` and nothing else gives back the out-of-bag matrix. Since the fit does
-#'   not record the flag, `proxima` recovers it from `object$call` and refuses
+#'   not record the flag, `Proximum` recovers it from `object$call` and refuses
 #'   to guess when the call does not settle the question.
 #'
 #'   Using `type = "oob"` requires `keep.inbag = TRUE` at fitting time.

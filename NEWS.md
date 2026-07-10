@@ -1,4 +1,4 @@
-# proxima 0.0.0.9000
+# Proximum 0.0.0.9000
 
 ## New
 

@@ -8,7 +8,7 @@ NULL
 
 # Registering `autoplot()` methods is not enough: importing the generic makes it
 # visible inside the package, not to the user who attached it. Re-exporting is
-# what makes `autoplot(px)` work after `library(proxima)`.
+# what makes `autoplot(px)` work after `library(Proximum)`.
 
 #' @importFrom ggplot2 autoplot
 #' @export

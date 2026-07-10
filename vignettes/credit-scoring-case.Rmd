@@ -15,7 +15,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 > (phase F2) and the scalability layer (phase F3), since a realistic credit
 > portfolio needs both.
 
-Credit scoring is the running example across `proxima`, `rankimp` and `e2tree`,
+Credit scoring is the running example across `Proximum`, `rankimp` and `e2tree`,
 for three reasons. The regulatory context makes explanation a requirement rather
 than a nicety; the data are large enough that the $O(n^2)$ cost of a proximity
 matrix bites; and the predictors are correlated enough that different importance
@@ -35,7 +35,7 @@ measures genuinely disagree, which is what `rankimp` exists to handle.
 ## Sketch
 
 ```{r}
-library(proxima)
+library(Proximum)
 
 rf <- randomForest::randomForest(default ~ ., data = loans, keep.inbag = TRUE)
 px <- proximity(rf, newdata = loans, type = "oob")

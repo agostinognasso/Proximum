@@ -28,7 +28,7 @@ which preserves the dependence induced by the matrix structure, as an ordinary
 permutation of the entries would not.
 
 ```{r}
-library(proxima)
+library(Proximum)
 
 px1 <- proximity(rf_shallow, newdata = df)
 px2 <- proximity(rf_deep, newdata = df)

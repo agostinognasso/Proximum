@@ -1,8 +1,12 @@
-Package: proxima
+Package: Proximum
 Title: Statistical Analysis of Ensemble Proximity Matrices
 Version: 0.0.0.9000
 Authors@R:
-    person("Agostino", "Gnasso", , "gn.agostino@gmail.com", role = c("aut", "cre"))
+    person(given = "Agostino",
+           family = "Gnasso",
+           role = c("aut", "cre", "cph"),
+           email = "agostino.gnasso@unina.it",
+           comment = c(ORCID = "0000-0002-8046-3923"))
 Description: Treats the proximity matrices produced by tree ensembles as
     first-class statistical objects rather than as model by-products.
     Provides a unified extractor across ensemble engines, transformations

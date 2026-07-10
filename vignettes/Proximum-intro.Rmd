@@ -22,12 +22,12 @@ $$P_{ij} = \frac{1}{B} \sum_{b=1}^{B} \mathbb{I}\left[\ell_b(x_i) = \ell_b(x_j)\
 where $\ell_b(x)$ is the leaf of tree $b$ reached by $x$.
 
 Most implementations treat $P$ as a by-product, handed back on request and
-otherwise ignored. `proxima` treats it as the object of interest.
+otherwise ignored. `Proximum` treats it as the object of interest.
 
 ## Extracting a proximity matrix
 
 ```{r, eval = has_rf}
-library(proxima)
+library(Proximum)
 
 set.seed(1)
 rf <- randomForest::randomForest(
@@ -43,7 +43,7 @@ px
 A warning about the matrix `randomForest` hands back on its own. Its signature
 reads `oob.prox = proximity`, so a forest fitted with `proximity = TRUE` and
 nothing else stores the **out-of-bag** matrix, not the in-bag one — and the fit
-records nothing that says which. `proxima` recovers the flag from the call and
+records nothing that says which. `Proximum` recovers the flag from the call and
 refuses to relabel the matrix behind your back:
 
 ```{r, eval = has_rf, error = TRUE}
@@ -110,7 +110,7 @@ column, so the in-bag proximity is
 $$P = \frac{1}{B} Z Z^{\top},$$
 
 a Gram matrix over $B$. It is therefore positive semi-definite, and
-$\sqrt{1 - P}$ is Euclidean. (This identity is also why `proxima` computes the
+$\sqrt{1 - P}$ is Euclidean. (This identity is also why `Proximum` computes the
 matrix with a sparse cross-product instead of a loop over trees: the same
 formula that settles the geometry is two orders of magnitude faster to
 evaluate.)
@@ -166,7 +166,7 @@ recorded on the object.
 ## Other engines
 
 The proximity is a property of the ensemble, not of the package that fitted it.
-`proxima` extracts it from `ranger` with the same definitions and the same
+`Proximum` extracts it from `ranger` with the same definitions and the same
 out-of-bag handling:
 
 ```{r, eval = requireNamespace("ranger", quietly = TRUE)}
