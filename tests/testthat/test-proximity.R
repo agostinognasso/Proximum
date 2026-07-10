@@ -60,15 +60,69 @@ test_that("a forest without stored training data demands newdata", {
   expect_error(proximity(fit_iris(ntree = 10L)), "`newdata` is required")
 })
 
-test_that("a forest fitted with proximity = TRUE needs no newdata", {
+test_that("the stored proximity of randomForest is out-of-bag by default", {
+  # randomForest() declares `oob.prox = proximity`, so this fit stores the
+  # out-of-bag matrix even though the user never said "oob". Asking for the
+  # in-bag matrix must not hand it back with the wrong label.
   set.seed(1)
   fit <- randomForest::randomForest(
     Species ~ ., data = iris, ntree = 50, proximity = TRUE
   )
-  px <- proximity(fit)
 
+  expect_identical(stored_prox_type(fit), "oob")
+  expect_error(proximity(fit), "stores an out-of-bag proximity matrix")
+
+  px <- proximity(fit, type = "oob")
   expect_s3_class(px, "proximity")
+  expect_identical(attr(px, "prox_type"), "oob")
+})
+
+test_that("the stored proximity is in-bag when oob.prox is switched off", {
+  set.seed(1)
+  fit <- randomForest::randomForest(
+    Species ~ ., data = iris, ntree = 50, proximity = TRUE, oob.prox = FALSE
+  )
+
+  expect_identical(stored_prox_type(fit), "inbag")
+
+  px <- proximity(fit)
   expect_identical(attr(px, "prox_type"), "inbag")
+  expect_error(proximity(fit, type = "oob"), "stores an in-bag proximity matrix")
+})
+
+test_that("the stored proximity matches what we recompute ourselves", {
+  set.seed(7)
+  fit <- randomForest::randomForest(
+    Species ~ ., data = iris, ntree = 100, proximity = TRUE, keep.inbag = TRUE
+  )
+
+  # The default fit stores the out-of-bag matrix; ours must reproduce it.
+  expect_equal(
+    as.matrix(proximity(fit, type = "oob")),
+    unname(fit$proximity),
+    ignore_attr = TRUE
+  )
+})
+
+test_that("an undeterminable oob.prox is an error, not a guess", {
+  # The flag was passed as a variable, so its value is not recoverable from the
+  # recorded call. Labelling the matrix by guessing would be worse than failing.
+  set.seed(1)
+  flag <- FALSE
+  fit <- randomForest::randomForest(
+    Species ~ ., data = iris, ntree = 50, proximity = TRUE, oob.prox = flag
+  )
+
+  expect_true(is.na(stored_prox_type(fit)))
+  expect_error(proximity(fit), "undeterminable type")
+})
+
+test_that("print counts missing pairs, not missing matrix cells", {
+  px <- proximity(fit_iris(ntree = 3L), newdata = iris, type = "oob")
+  n_pairs <- sum(is.na(px[upper.tri(px)]))
+
+  expect_output(print(px), paste0("missing: ", n_pairs, " pairs"))
+  expect_identical(summary(px)$n_missing, n_pairs)
 })
 
 test_that("out-of-bag proximity is only defined on the training data", {

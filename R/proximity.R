@@ -37,8 +37,15 @@ proximity <- function(object, ...) {
 #'   `randomForest::randomForest()`.
 #'
 #'   `randomForest` does not store its training data, so `newdata` must be
-#'   supplied. The single exception is a forest fitted with
-#'   `proximity = TRUE`, whose in-bag proximity matrix is returned as is.
+#'   supplied. The single exception is a forest fitted with `proximity = TRUE`,
+#'   whose stored matrix is reused when it is of the requested `type`.
+#'
+#'   Beware that the stored matrix is *not* the in-bag proximity by default:
+#'   `randomForest()` sets `oob.prox = proximity`, so asking for `proximity =
+#'   TRUE` and nothing else gives back the out-of-bag matrix. Since the fit does
+#'   not record the flag, `proxima` recovers it from `object$call` and refuses
+#'   to guess when the call does not settle the question.
+#'
 #'   Using `type = "oob"` requires `keep.inbag = TRUE` at fitting time.
 #' @export
 proximity.randomForest <- function(object,
@@ -48,13 +55,27 @@ proximity.randomForest <- function(object,
   type <- match.arg(type)
 
   if (is.null(newdata)) {
-    if (type == "inbag" && !is.null(object$proximity)) {
-      return(new_proximity(
-        unclass(object$proximity),
-        engine = "randomForest",
-        n_trees = object$ntree,
-        prox_type = "inbag"
-      ))
+    if (!is.null(object$proximity)) {
+      stored <- stored_prox_type(object)
+      if (identical(stored, type)) {
+        return(new_proximity(
+          unclass(object$proximity),
+          engine = "randomForest",
+          n_trees = object$ntree,
+          prox_type = type
+        ))
+      }
+      stop(
+        "The forest stores ",
+        if (is.na(stored)) {
+          "a proximity matrix of undeterminable type (`oob.prox` was not a literal)"
+        } else {
+          paste0(if (stored == "oob") "an out-of-bag" else "an in-bag", " proximity matrix")
+        },
+        ", but `type = \"", type, "\"` was requested. ",
+        "Pass `newdata` so that the matrix can be recomputed.",
+        call. = FALSE
+      )
     }
     stop(
       "`newdata` is required: a randomForest fit does not store its training ",
@@ -100,6 +121,35 @@ proximity.ranger <- function(object, newdata = NULL, type = c("inbag", "oob"), .
   not_implemented("proximity.ranger", "F1")
 }
 
+#' Which proximity did randomForest store?
+#'
+#' `randomForest()` declares `oob.prox = proximity`, so a fit made with
+#' `proximity = TRUE` and no further argument carries the *out-of-bag* matrix,
+#' not the in-bag one. The fitted object does not record the flag anywhere, so
+#' the only evidence is the recorded call.
+#'
+#' Three cases. The call does not mention `oob.prox`, and the default applies:
+#' the stored matrix is out-of-bag. The call passes a literal, and it decides.
+#' The call passes a variable or an expression, whose value at fitting time is
+#' gone: we return `NA` and let the caller refuse to guess. Evaluating that
+#' expression now would resolve it against the wrong environment, and
+#' silently returning the wrong label is worse than an error.
+#'
+#' @param object A `randomForest` fit carrying a `proximity` component.
+#' @return `"oob"`, `"inbag"`, or `NA_character_` when the call is inconclusive.
+#' @noRd
+stored_prox_type <- function(object) {
+  cl <- object$call
+  if (!is.call(cl) || !("oob.prox" %in% names(cl))) {
+    return("oob")
+  }
+  flag <- cl$oob.prox
+  if (is.logical(flag) && length(flag) == 1L && !is.na(flag)) {
+    return(if (flag) "oob" else "inbag")
+  }
+  NA_character_
+}
+
 #' Construct a proximity object
 #'
 #' @param x A symmetric numeric matrix.
@@ -127,7 +177,7 @@ print.proximity <- function(x, ...) {
   cat("  engine :", attr(x, "engine"), "\n")
   cat("  trees  :", attr(x, "n_trees"), "\n")
   cat("  type   :", attr(x, "prox_type"), "\n")
-  n_na <- sum(is.na(x))
+  n_na <- sum(is.na(x[upper.tri(x)]))
   if (n_na > 0L) {
     cat("  missing:", n_na, "pairs never co-occurred out-of-bag\n")
   }

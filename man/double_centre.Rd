@@ -10,8 +10,15 @@ double_centre(d)
 \item{d}{A \code{dist} object or a symmetric numeric matrix.}
 }
 \value{
-The Gower centred matrix.
+The Gower centred matrix, with the dimnames of \code{as.matrix(d)}.
 }
 \description{
-Double centring of a squared dissimilarity matrix
+Computes \eqn{G = -\frac{1}{2} J D^{2} J} with
+\eqn{J = I - n^{-1} \mathbf{1} \mathbf{1}^{\top}}.
+}
+\details{
+Multiplying by \code{J} on both sides subtracts the row means, the column means,
+and adds back the grand mean; doing it that way costs \eqn{O(n^2)} and one
+matrix, whereas forming \code{J} and multiplying costs \eqn{O(n^3)} and three.
+Unlike the matrix-product form, it also keeps the dimnames of \code{d}.
 }

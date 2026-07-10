@@ -40,6 +40,19 @@ px
 
 `randomForest` does not keep its training data, so `newdata` has to be supplied.
 
+A warning about the matrix `randomForest` hands back on its own. Its signature
+reads `oob.prox = proximity`, so a forest fitted with `proximity = TRUE` and
+nothing else stores the **out-of-bag** matrix, not the in-bag one — and the fit
+records nothing that says which. `proxima` recovers the flag from the call and
+refuses to relabel the matrix behind your back:
+
+```{r, eval = has_rf, error = TRUE}
+rf_stored <- randomForest::randomForest(
+  Species ~ ., data = iris, ntree = 50, proximity = TRUE
+)
+proximity(rf_stored) # asks for in-bag; the forest has out-of-bag
+```
+
 ## Diagnostics
 
 `summary()` reports what the matrix looks like and whether the dissimilarity it
@@ -90,14 +103,27 @@ sum(is.na(proximity(small, newdata = iris, type = "oob")))
 ## The out-of-bag proximity is not a kernel
 
 Debiasing the proximity costs something, and the price is worth stating
-plainly. The in-bag proximity is an average of matrices $Z_b Z_b^{\top}$, where
-$Z_b$ is the leaf-membership indicator of tree $b$. Each term is a Gram matrix,
-so the average is positive semi-definite, and $\sqrt{1 - P}$ is Euclidean.
+plainly. Stack the leaf indicators of all $B$ trees into one matrix $Z$, with a
+column per leaf. Two observations share a leaf exactly when they agree in that
+column, so the in-bag proximity is
 
-The out-of-bag proximity divides each entry by a *different* denominator — the
-number of trees in which that particular pair was jointly out-of-bag. The result
-is no longer an average of Gram matrices and need not be positive
-semi-definite:
+$$P = \frac{1}{B} Z Z^{\top},$$
+
+a Gram matrix over $B$. It is therefore positive semi-definite, and
+$\sqrt{1 - P}$ is Euclidean. (This identity is also why `proxima` computes the
+matrix with a sparse cross-product instead of a loop over trees: the same
+formula that settles the geometry is two orders of magnitude faster to
+evaluate.)
+
+The out-of-bag proximity masks $Z$ to the out-of-bag entries and divides by the
+number of trees in which each *pair* was jointly out-of-bag. With $M$ the
+out-of-bag mask,
+
+$$P^{\text{oob}} = \left( Z_{\text{oob}} Z_{\text{oob}}^{\top} \right) \oslash \left( M M^{\top} \right),$$
+
+an elementwise quotient of two Gram matrices. The Hadamard quotient of two
+positive semi-definite matrices need not be positive semi-definite, and here it
+is not:
 
 ```{r, eval = has_rf}
 c(

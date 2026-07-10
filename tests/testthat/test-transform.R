@@ -26,5 +26,26 @@ test_that("double_centre produces a symmetric matrix with zero row sums", {
   G <- double_centre(d)
 
   expect_equal(G, t(G))
-  expect_equal(rowSums(G), rep(0, nrow(G)), tolerance = 1e-10)
+  expect_equal(unname(rowSums(G)), rep(0, nrow(G)), tolerance = 1e-10)
+})
+
+test_that("double_centre matches the textbook J D^2 J form it replaces", {
+  # The shipped version subtracts row and column means directly, which is
+  # O(n^2); the definition below forms J and multiplies, which is O(n^3). They
+  # must agree to machine precision. The matrix-product form loses the dimnames
+  # on the way, which is one more reason not to use it.
+  set.seed(3)
+  d <- stats::dist(matrix(rnorm(60), ncol = 4))
+  D <- as.matrix(d)
+  n <- nrow(D)
+  J <- diag(n) - matrix(1 / n, n, n)
+
+  expect_equal(double_centre(d), -0.5 * J %*% (D^2) %*% J, ignore_attr = TRUE)
+})
+
+test_that("double_centre keeps the observation labels", {
+  D <- as.matrix(stats::dist(matrix(1:6, ncol = 2)))
+  dimnames(D) <- list(letters[1:3], letters[1:3])
+
+  expect_identical(dimnames(double_centre(D)), list(letters[1:3], letters[1:3]))
 })

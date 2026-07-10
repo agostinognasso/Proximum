@@ -34,6 +34,8 @@ forest's behaviour from exactly this similarity structure.
 
 ## Installation
 
+Not on CRAN yet.
+
 ```r
 # install.packages("pak")
 pak::pak("proxima")

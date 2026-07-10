@@ -59,8 +59,14 @@ forest is small: such pairs are returned as \code{NA}.
 \code{randomForest::randomForest()}.
 
 \code{randomForest} does not store its training data, so \code{newdata} must be
-supplied. The single exception is a forest fitted with
-\code{proximity = TRUE}, whose in-bag proximity matrix is returned as is.
+supplied. The single exception is a forest fitted with \code{proximity = TRUE},
+whose stored matrix is reused when it is of the requested \code{type}.
+
+Beware that the stored matrix is \emph{not} the in-bag proximity by default:
+\code{randomForest()} sets \code{oob.prox = proximity}, so asking for \code{proximity = TRUE} and nothing else gives back the out-of-bag matrix. Since the fit does
+not record the flag, \code{proxima} recovers it from \code{object$call} and refuses
+to guess when the call does not settle the question.
+
 Using \code{type = "oob"} requires \code{keep.inbag = TRUE} at fitting time.
 
 \item \code{proximity(ranger)}: Method for forests fitted with \code{ranger::ranger()}.
