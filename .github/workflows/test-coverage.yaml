@@ -22,10 +22,15 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::covr, any::xml2
+          extra-packages: any::covr
           needs: coverage
 
       - name: Test coverage
+        env:
+          # The floor, not the target. Raise it when the package clears the next
+          # whole number and stays there; lowering it needs a reason in the
+          # commit message.
+          COVERAGE_FLOOR: 90
         run: |
           cov <- covr::package_coverage(
             quiet = FALSE,
@@ -33,17 +38,19 @@ jobs:
             install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
           )
           print(cov)
-          covr::to_cobertura(cov)
-        shell: Rscript {0}
 
-      - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
-        with:
-          # Fail if error if not on PR, or if on PR and token is given
-          fail_ci_if_error: ${{ github.event_name != 'pull_request' || secrets.CODECOV_TOKEN }}
-          files: ./cobertura.xml
-          plugins: noop
-          disable_search: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+          floor <- as.numeric(Sys.getenv("COVERAGE_FLOOR"))
+          total <- covr::percent_coverage(cov)
+          by_file <- covr::coverage_to_list(cov)$filecoverage
+          if (total < floor) {
+            cat("\nLowest covered files:\n")
+            print(round(sort(by_file)[seq_len(min(5, length(by_file)))], 2))
+            stop(sprintf("coverage %.2f%% is below the floor of %.0f%%",
+                         total, floor), call. = FALSE)
+          }
+          cat(sprintf("\ncoverage %.2f%% clears the floor of %.0f%%\n",
+                      total, floor))
+        shell: Rscript {0}
 
       - name: Show testthat output
         if: always()
