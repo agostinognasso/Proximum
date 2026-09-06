@@ -24,5 +24,55 @@ deep learning literature; \code{rv_coefficient()} is its classical multivariate
 ancestor.
 }
 \details{
-Not implemented yet: scheduled for phase F2.
+Both are the normalised Frobenius inner product of the two matrices,
+\deqn{\frac{\langle A, B \rangle_F}{\|A\|_F \, \|B\|_F},}
+and they differ only in what they are computed on: \code{cka()} double-centres
+each matrix first with \code{\link[=double_centre]{double_centre()}}, \code{rv_coefficient()} takes them as
+they are. Centring is what buys the invariance, since it removes the mean
+similarity that any two kernels on the same observations share whether or
+not they have learned the same structure.
+
+Neither is a test. There is no null distribution and no p-value: they say
+how aligned two representations are, not whether the alignment is more than
+chance would give. \code{\link[=mantel_test]{mantel_test()}} answers that question.
+}
+\section{Why an out-of-bag matrix is refused}{
+
+An alignment between kernels needs two kernels. An in-bag proximity is one,
+being \eqn{ZZ^\top / B} for the leaf-indicator matrix \eqn{Z}. An
+out-of-bag proximity is not, and growing the forest does not repair it: each
+entry is a ratio whose denominator counts only the trees where the pair was
+jointly out of bag, and those denominators differ across pairs. Measured on
+\code{iris} at \eqn{n = 80}, the smallest eigenvalue was -1.23 with 50 trees,
+-0.53 with 200, -0.23 with 1000 and -0.11 with 5000.
+
+What that costs is a biased number rather than an impossible one. Over 600
+out-of-bag comparisons in \code{inst/simulations/inference-calibration.R}, the
+uncorrected alignment stayed inside \eqn{[0, 1]} every time, and it was
+\strong{below} the corrected one every time, by 0.089 on average and by as much
+as 0.154. The negative eigenvalues subtract from the numerator, so an
+uncorrected alignment understates how alike two representations are, and it
+does so quietly.
+
+These functions therefore refuse the input and name the repair rather than
+returning a number that looks reasonable. Pass the matrix through
+\code{\link[=make_psd]{make_psd()}}, and the decision about which correction to apply, and what it
+costs, stays with you.
+}
+
+\examples{
+\dontshow{if (requireNamespace("randomForest", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+set.seed(1)
+rows <- sample(nrow(iris), 60)
+shallow <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
+                                      ntree = 100, maxnodes = 4)
+deep <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
+                                   ntree = 100)
+cka(proximity(shallow, newdata = iris[rows, ]),
+    proximity(deep, newdata = iris[rows, ]))
+\dontshow{\}) # examplesIf}
+}
+\seealso{
+\code{\link[=mantel_test]{mantel_test()}} for the same comparison with a p-value,
+\code{\link[=make_psd]{make_psd()}} for the correction these functions require.
 }
