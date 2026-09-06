@@ -24,7 +24,9 @@ partial Mantel statistic is computed.}
 \item{method}{Correlation coefficient, \code{"pearson"} or \code{"spearman"}.}
 }
 \value{
-An object of class \code{htest}.
+An object of class \code{htest}. The number of usable pairs and the
+number of permutations are in \code{parameter}; the permuted statistics are
+kept in \code{null_distribution}.
 }
 \description{
 Permutation test for the correlation between the off-diagonal entries of
@@ -32,5 +34,52 @@ two proximity matrices computed on the same observations. The partial
 variant conditions on a third matrix.
 }
 \details{
-Not implemented yet: scheduled for phase F2.
+The statistic is the correlation between the strict lower triangles of the
+two matrices. Its size is not the point; the null distribution is. The
+entries of a proximity matrix are not independent of one another, since each
+one shares an observation with \eqn{2(n-2)} others, so the sampling
+distribution of a correlation between two of them is nothing like the one a
+correlation between \eqn{n(n-1)/2} independent pairs would have. Testing it
+against the usual table would reject almost always.
+
+The null is therefore built by relabelling the observations: the rows and
+the columns of the second matrix are permuted \strong{together}, which is the
+only rearrangement that leaves it a proximity matrix on the same
+observations. Permuting the entries instead would break the dependence the
+structure carries and give a null far too narrow.
+}
+\section{Undefined pairs}{
+
+An out-of-bag proximity is \code{NA} for a pair that was never jointly out of
+bag, which is evidence the forest did not produce rather than a value to
+impute. The statistic uses the pairs that are defined in every matrix
+supplied, and the count is reported in the result so that a surprising
+p-value can be checked against how much of the matrix it rested on. A
+comparison with very few usable pairs is a reason to grow more trees.
+}
+
+\section{The partial variant}{
+
+With \code{pxz} supplied, the statistic is the correlation between the residuals
+of \code{px1} and of \code{px2} after each has been regressed on \code{pxz}. It answers a
+different question from the plain test: whether the two matrices still agree
+once whatever they both share with the third is taken out. The permutation
+is unchanged.
+}
+
+\examples{
+\dontshow{if (requireNamespace("randomForest", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+set.seed(1)
+rows <- sample(nrow(iris), 60)
+shallow <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
+                                      ntree = 100, maxnodes = 4)
+deep <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
+                                   ntree = 100)
+mantel_test(proximity(shallow, newdata = iris[rows, ]),
+            proximity(deep, newdata = iris[rows, ]), n_perm = 99)
+\dontshow{\}) # examplesIf}
+}
+\seealso{
+\code{\link[=cka]{cka()}} for a coefficient that needs no permutation,
+\code{\link[=make_psd]{make_psd()}} when the matrix is to be used as a kernel.
 }

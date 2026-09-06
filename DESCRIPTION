@@ -30,7 +30,8 @@ Suggests:
     randomForest,
     ranger,
     rmarkdown,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    vegan
 VignetteBuilder:
     knitr
 Config/testthat/edition: 3
