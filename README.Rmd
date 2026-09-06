@@ -24,9 +24,12 @@ it: there is no way in R to test whether two forests represent the data the same
 way, to ask how many trees a stable proximity needs, or to compute the thing at
 all when `n` is large.
 
-`Proximum` treats the proximity matrix as a first-class statistical object —
-with inference, stability diagnostics, scalable approximations and dedicated
-visualisations — rather than as a by-product of the model.
+`Proximum` treats the proximity matrix as a first-class statistical object
+rather than as a by-product of the model: one extractor across engines, in-bag
+and out-of-bag definitions, the transformations and metric diagnostics that go
+with them, and permutation inference for comparing two matrices. Stability
+diagnostics, scalable approximations and the plots are planned; the functions
+that will provide them are documented and raise an error naming their release.
 
 It is the methodological layer underneath
 [`e2tree`](https://cran.r-project.org/package=e2tree), which reconstructs a

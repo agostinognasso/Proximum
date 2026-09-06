@@ -53,6 +53,7 @@ proximity.randomForest <- function(object,
                                    type = c("inbag", "oob"),
                                    ...) {
   type <- match.arg(type)
+  reject_unused(..., what = "proximity")
 
   if (is.null(newdata)) {
     if (!is.null(object$proximity)) {
@@ -129,6 +130,7 @@ proximity.randomForest <- function(object,
 #' @export
 proximity.ranger <- function(object, newdata = NULL, type = c("inbag", "oob"), ...) {
   type <- match.arg(type)
+  reject_unused(..., what = "proximity")
 
   if (is.null(object$forest)) {
     stop(
@@ -202,6 +204,36 @@ stored_prox_type <- function(object) {
     return(if (flag) "oob" else "inbag")
   }
   NA_character_
+}
+
+#' Refuse arguments the method does not know
+#'
+#' `...` is in the signature so that methods can differ, not so that a
+#' misspelled argument can be swallowed. `vignettes/large-n.Rmd` calls
+#' `proximity(rf, newdata = df, sparse = TRUE, threshold = 0.05)` against a
+#' scalability layer that does not exist yet, and without this guard the call
+#' returns a dense matrix as though it had been honoured. A wrong answer is
+#' worse than an error, and the argument names are the user's clue.
+#'
+#' @param ... The dots as the method received them.
+#' @param what The name of the method, for the message.
+#' @return `NULL`, invisibly. Called for the error.
+#' @noRd
+reject_unused <- function(..., what) {
+  extra <- names(substitute(list(...)))[-1L]
+  if (length(list(...)) == 0L) {
+    return(invisible(NULL))
+  }
+  unnamed <- length(list(...)) - sum(nzchar(extra))
+  named <- extra[nzchar(extra)]
+  stop(
+    "`", what, "()` does not have ",
+    if (length(named)) paste0("an argument called `", paste(named, collapse = "`, `"), "`") else
+      paste0(unnamed, " argument", if (unnamed > 1L) "s" else "", " to take here"),
+    ". Proximities are computed densely; `sparsify()` and `nystrom()` are ",
+    "scheduled for a later release and are not reachable through `proximity()`.",
+    call. = FALSE
+  )
 }
 
 #' Construct a proximity object
