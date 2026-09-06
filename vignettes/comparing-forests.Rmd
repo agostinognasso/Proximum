@@ -8,38 +8,64 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+has_rf <- requireNamespace("randomForest", quietly = TRUE)
 ```
-
-> **Status.** The inference layer is scheduled for phase F2 of the roadmap. This
-> vignette fixes the interface and the questions it is meant to answer; the code
-> below does not run yet.
 
 Two forests fitted on the same data with different hyperparameters represent
 that data differently. The question "how differently?" has no answer in the
 usual toolkit, because the objects being compared are $n \times n$ matrices
 rather than vectors of predictions.
 
-## Correlation between two proximity matrices
+## Two forests to compare
 
-The Mantel test correlates the off-diagonal entries of two matrices and gets its
-null distribution by permuting the rows and columns of one of them together —
-which preserves the dependence induced by the matrix structure, as an ordinary
-permutation of the entries would not.
+A shallow forest and a deep one, on the same rows. The shallow one is capped at
+four leaves per tree, so it can only carve the data into coarse blocks; the
+deep one is free to isolate individual observations.
 
-```{r}
+```{r setup, eval = has_rf}
 library(Proximum)
+library(randomForest)
+
+set.seed(1)
+rows <- sample(nrow(iris), 60)
+df <- iris[rows, ]
+
+set.seed(2)
+rf_shallow <- randomForest(Species ~ ., data = df, ntree = 300, maxnodes = 4,
+                           keep.inbag = TRUE)
+set.seed(3)
+rf_deep <- randomForest(Species ~ ., data = df, ntree = 300, keep.inbag = TRUE)
 
 px1 <- proximity(rf_shallow, newdata = df)
 px2 <- proximity(rf_deep, newdata = df)
+px1
+```
 
+## Correlation between two proximity matrices
+
+The Mantel test correlates the off-diagonal entries of two matrices and gets its
+null distribution by permuting the rows and columns of one of them together,
+which preserves the dependence induced by the matrix structure as an ordinary
+permutation of the entries would not.
+
+That is not a technicality. Each entry of a proximity matrix shares an
+observation with $2(n-2)$ others, so the $n(n-1)/2$ entries are a long way from
+independent. Referring the correlation to the usual table would reject almost
+whatever you fed it.
+
+```{r mantel, eval = has_rf}
 mantel_test(px1, px2, n_perm = 999)
 ```
 
-## How much of the structure is the response?
+The result carries the number of pairs it used. On an in-bag proximity that is
+every pair; on an out-of-bag one it can be fewer, because a pair that was never
+jointly out of bag has no proximity to correlate. The test uses what is defined
+and reports how much that was.
 
-```{r}
-permanova(px1, ~ y + region, data = df)
+```{r oob, eval = has_rf}
+oob <- proximity(rf_deep, newdata = df, type = "oob")
+mantel_test(px1, oob, n_perm = 999)$parameter
 ```
 
 ## Alignment of representations
@@ -51,20 +77,50 @@ comparing learned representations in the deep learning literature. Applying it
 to forests puts ensemble explainability and representation similarity on the
 same footing.
 
-```{r}
+It is a coefficient and not a test: there is no p-value, and a high alignment
+is not evidence of anything by itself. `mantel_test()` is where the evidence is.
+
+```{r cka, eval = has_rf}
 cka(px1, px2)
-protest(px1, px2)
+rv_coefficient(px1, px2)
 ```
 
-## Comparing a forest with its explanation
+The two differ only in the centring. `cka()` double-centres each matrix first,
+which is what removes the mean similarity any two kernels on the same
+observations share whether or not they have learned the same structure.
 
-The motivating case: `e2tree` approximates a forest with a single tree. Whether
-that tree preserves the forest's view of the data is exactly a question about
-two proximity matrices.
+### Out-of-bag matrices have to be repaired first
 
-```{r}
-px_forest <- proximity(rf, newdata = df)
-px_e2tree <- proximity(e2tree_fit, newdata = df)
+An out-of-bag proximity is not positive semi-definite, and no number of trees
+repairs it: its entries are ratios whose denominators count only the trees where
+each pair was jointly out of bag, and those denominators differ across pairs.
+An alignment computed on it is not an alignment between kernels, so `cka()`
+refuses it.
 
-mantel_test(px_forest, px_e2tree)
+The refusal is not about the number leaving `[0, 1]`. Over 600 out-of-bag
+comparisons it never did. It is that the number is quietly too low: the
+negative eigenvalues subtract from the numerator, so the uncorrected alignment
+understated the corrected one in every one of those 600 comparisons, by 0.089
+on average and by as much as 0.154.
+
+```{r refuse, error = TRUE, eval = has_rf}
+cka(oob, oob)
 ```
+
+`make_psd()` is the repair, and it belongs to you rather than to `cka()`,
+because which correction to use and what it costs is a decision about your data.
+
+```{r repair, eval = has_rf}
+cka(make_psd(px2), make_psd(oob))
+```
+
+## Still to come
+
+`permanova()`, which will partition the variation in the induced dissimilarity
+across the terms of a formula, and `protest()`, which will superimpose the two
+multidimensional scaling configurations, are the rest of phase F2 and are not
+implemented. So is the motivating case underneath all of this: `e2tree`
+approximates a forest with a single tree, and whether that tree preserves the
+forest's view of the data is exactly a question about two proximity matrices.
+That comparison needs a `proximity()` method for `e2tree` objects, which does
+not exist yet either.

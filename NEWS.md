@@ -2,6 +2,25 @@
 
 ## New
 
+* `mantel_test()` is implemented: the correlation between the off-diagonal
+  entries of two proximity matrices, Pearson or Spearman, against a null built
+  by permuting the rows and columns of one of them together. Partial Mantel is
+  supported through `pxz`. Measured over 300 replicates per cell in
+  `inst/simulations/inference-calibration.R`, the rejection rate on forests
+  fitted to independent data was 0.053 in-bag and 0.057 out-of-bag against a
+  nominal 0.05, and the power on forests fitted to the same data was 1.000.
+  Undefined pairs are used where they are defined and counted in the result,
+  which is what `vegan::mantel()` cannot do and the reason this package has its
+  own implementation. On matrices that vegan can take, the two agree exactly on
+  the statistic.
+* `cka()` and `rv_coefficient()` are implemented: the normalised Frobenius
+  inner product of the two matrices, double-centred for `cka()` and as supplied
+  for `rv_coefficient()`. Both refuse an out-of-bag proximity and name
+  `make_psd()`, because an alignment between kernels needs two kernels. The
+  refusal is worth its inconvenience: over 600 out-of-bag comparisons the
+  uncorrected alignment stayed inside `[0, 1]` every time and was below the
+  corrected one every time, by 0.089 on average and by as much as 0.154.
+
 * `proximity()` gains a method for `ranger` fits, with the same in-bag and
   out-of-bag definitions. The leaf co-occurrence engine now normalises each
   tree's leaf labels, since engines disagree on where they start counting.
@@ -14,6 +33,16 @@
   and shown by `print()`.
 
 ## Correctness
+
+* The `...` of `proximity()` no longer swallows arguments the method does not
+  have. `vignettes/large-n.Rmd` sketches a scalability layer with
+  `proximity(rf, newdata = df, sparse = TRUE, threshold = 0.05)`, and against
+  the current code that call returned a dense matrix as though the request had
+  been honoured. It was the one path in the package that answered wrongly
+  rather than failing.
+* `DESCRIPTION` no longer claims the inference, stability, scalability and
+  visualisation layers in the present indicative. It is the text CRAN and every
+  package index display, and four of those layers did not exist. Two now do.
 
 * `proximity()` no longer relabels the matrix stored by `randomForest`.
   `randomForest()` declares `oob.prox = proximity`, so a fit made with
