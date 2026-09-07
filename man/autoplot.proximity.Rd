@@ -2,34 +2,126 @@
 % Please edit documentation in R/autoplot.R
 \name{autoplot.proximity}
 \alias{autoplot.proximity}
-\title{Visualise a proximity matrix}
+\alias{autoplot.proximity_sparse}
+\alias{autoplot.proximity_nystrom}
+\alias{autoplot.proximity_stability}
+\alias{autoplot.proximity_trees}
+\title{Visualise a proximity object}
 \usage{
-\method{autoplot}{proximity}(object, type = c("heatmap", "mds", "network", "stability"), ...)
+\method{autoplot}{proximity}(
+  object,
+  type = c("heatmap", "mds", "network"),
+  colour = NULL,
+  threshold = 0.05,
+  ...
+)
+
+\method{autoplot}{proximity_sparse}(object, ...)
+
+\method{autoplot}{proximity_nystrom}(object, colour = NULL, ...)
+
+\method{autoplot}{proximity_stability}(object, ...)
+
+\method{autoplot}{proximity_trees}(object, ...)
 }
 \arguments{
-\item{object}{A \code{proximity} object.}
+\item{object}{A \code{proximity} object, or one of the four other classes
+listed above.}
 
-\item{type}{One of \code{"heatmap"}, \code{"mds"}, \code{"network"}, \code{"stability"}.}
+\item{type}{Which view to draw. \code{proximity} objects only.}
 
-\item{...}{Reserved for future use.}
+\item{colour}{Optional vector of length \code{n}, one value per observation, to
+colour the points of the \code{"mds"} view by. Anything the caller has: the
+response, a cluster label, the out-of-bag error they computed.}
+
+\item{threshold}{Proximities at or below this value carry no edge in the
+\code{"network"} view.}
+
+\item{...}{Unused. Named arguments here are refused rather than swallowed.}
 }
 \value{
 A \code{ggplot} object.
 }
 \description{
-Four views of the same object:
+Each class gets the views its object can support:
 }
 \details{
-\itemize{
-\item \code{"heatmap"}: the matrix, with rows and columns seriated so that the
-block structure the ensemble has learned becomes visible.
-\item \code{"mds"}: a classical multidimensional scaling of the induced
-dissimilarity, coloured by class and by out-of-bag error.
-\item \code{"network"}: the thresholded proximity as a graph, with communities
-read as the implicit clusters of the forest.
-\item \code{"stability"}: the agreement between replicates as a function of the
-number of trees, with a bootstrap band.
+\tabular{ll}{
+\strong{class} \tab \strong{views} \cr
+\code{proximity} \tab \code{"heatmap"}, \code{"mds"}, \code{"network"} \cr
+\code{proximity_sparse} \tab the network, at the threshold it was built with \cr
+\code{proximity_nystrom} \tab the configuration, from the stored factor \cr
+\code{proximity_stability} \tab the pairwise agreements it holds \cr
+\code{proximity_trees} \tab the search path it recorded
+}
+}
+\section{What the heatmap orders by}{
+
+Rows and columns are ordered by an optimal leaf ordering of the
+complete-linkage hierarchical clustering of \eqn{\sqrt{1 - P}}, so that the
+blocks the ensemble learned line up along the diagonal. The axis labels are
+suppressed along with the original ordering: after the seriation an index is
+a position, not an observation, and printing it would invite it to be read
+as one.
 }
 
-Not implemented yet: scheduled for phase F4.
+\section{What the network thresholds}{
+
+An edge is drawn for every pair whose proximity is above \code{threshold}, and
+the communities are those of \code{\link[igraph:cluster_louvain]{igraph::cluster_louvain()}} on the weighted
+graph. The default of 0.05 matches \code{\link[=sparsify]{sparsify()}}, and at small \code{n} it keeps a
+great many edges: a third of the pairs at n = 200, against a tenth at
+n = 1600. Raise it when the picture is a hairball.
+}
+
+\section{What the views draw from the random stream}{
+
+The heatmap and the network both draw from it, and both move with it. The
+layout and the community search are randomised outright. The seriation is
+randomised by the data it is given: a proximity is \eqn{k/B}, so it takes at
+most \eqn{B + 1} distinct values however many pairs there are, and on the
+150 irises of the example there are 197 distinct dissimilarities across
+11,175 pairs. The ordering breaks that many ties at random and moves with
+the seed; on the same matrix with the ties broken by hand it stops moving
+and stops drawing from the stream at all.
+
+Both views put back the stream they found, which is what keeps drawing a
+plot from moving the permutation tests around it. What they cannot do is
+make the picture independent of the state they were called in, so seed
+before the call when the figure has to come back the same.
+}
+
+\section{The view that could not be drawn}{
+
+This page used to promise a fourth view of a \code{proximity} object, the
+agreement between replicates against the number of trees, with a bootstrap
+band. A \code{proximity} object carries one number of trees and no replicates, so
+it holds no agreement to plot: that view is \code{autoplot()} of a \code{\link[=stability]{stability()}}
+or an \code{\link[=n_trees_required]{n_trees_required()}} result, which are the objects that have the
+numbers. The band went for the reason it went from \code{\link[=stability]{stability()}}: the
+pairwise agreements are dependent and their quantiles are not a sampling
+distribution.
+
+The same page promised an MDS "coloured by class and by out-of-bag error",
+and the object receives neither. \code{colour} is the caller's to fill.
+}
+
+\section{Suggested packages}{
+
+The heatmap needs \code{seriation} and the network needs \code{igraph}. Both are
+suggested rather than required, and a view whose package is missing fails
+naming it. The other three views need neither.
+}
+
+\examples{
+\dontshow{if (requireNamespace("randomForest", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+set.seed(1)
+rf <- randomForest::randomForest(Species ~ ., data = iris, ntree = 200)
+px <- proximity(rf, newdata = iris)
+autoplot(px, type = "mds", colour = iris$Species)
+\dontshow{\}) # examplesIf}
+}
+\seealso{
+\code{\link[=embedding]{embedding()}} for the configuration the \code{"mds"} view draws,
+\code{\link[=sparsify]{sparsify()}} for the threshold the network shares.
 }

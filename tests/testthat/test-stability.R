@@ -130,6 +130,31 @@ test_that("the ceiling is half the trees the ensemble carries", {
   expect_equal(max(attr(answer, "path")$trees), 100L)
 })
 
+test_that("the answer carries a class and still behaves as an integer", {
+  answer <- n_trees_required(iris_forest(), iris, eps = 0.2)
+
+  expect_s3_class(answer, "proximity_trees")
+  expect_true(is.integer(answer))
+  expect_output(print(answer), "proximity_trees")
+  # Measured before the class was added: R keeps the attributes of the first
+  # operand, so without `Ops.proximity_trees` the derived number carries the
+  # `path` and `eps` of a search that stopped at `answer`, and printing it
+  # reports a result that search never produced.
+  expect_null(attributes(answer + 100L))
+  expect_identical(answer + 100L, as.integer(answer) + 100L)
+  expect_identical(100L + answer, 100L + as.integer(answer))
+  expect_identical(-answer, -as.integer(answer))
+  expect_identical(answer > 500L, as.integer(answer) > 500L)
+  expect_length(seq_len(answer), as.integer(answer))
+})
+
+test_that("a search that reached nothing prints the projection instead", {
+  answer <- n_trees_required(iris_forest(ntree = 200L), iris, eps = 1e-6)
+
+  expect_output(print(answer), "not reached")
+  expect_output(print(answer), "projected")
+})
+
 test_that("the criterion consumes none of the caller's randomness", {
   fit <- iris_forest(ntree = 200L)
 

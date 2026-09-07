@@ -181,9 +181,14 @@ test_that("summary skips the eigen decomposition above max_eigen", {
   expect_true(is.na(s$euclidean))
 })
 
-test_that("not-yet-implemented entry points fail loudly", {
-  # Phases F2 and F3 have landed whole. What remains of the roadmap still has
-  # to say so rather than return something plausible.
-  expect_error(autoplot(structure(matrix(1), class = "proximity")),
-               "not implemented yet")
+test_that("an argument the method does not have is refused, not swallowed", {
+  # `proximity(rf, newdata = df, sparse = TRUE, threshold = 0.05)` is what
+  # `vignette("large-n")` used to call, and without the guard it came back a
+  # dense matrix as though the request had been honoured.
+  fit <- fit_iris(ntree = 10L)
+
+  expect_error(proximity(fit, newdata = iris, sparse = TRUE), "`sparse`")
+  expect_error(proximity(fit, newdata = iris, sparse = TRUE), "sparsify")
+  expect_error(proximity(fit, newdata = iris, type = "inbag", TRUE),
+               "1 argument")
 })

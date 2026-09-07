@@ -148,6 +148,21 @@ required
 attr(required, "path")
 ```
 
+`autoplot()` draws the search it recorded: the criterion against the block
+size on log axes, with the target, the answer, and the power law fitted
+through the measured points.
+
+```{r n-trees-plot, fig.width = 6, fig.height = 4}
+autoplot(required)
+```
+
+The answer is an integer and goes on behaving as one, so it can be handed
+straight back to the engine that raised the question:
+
+```{r n-trees-integer}
+required + 100L
+```
+
 The criterion falls as a power of the block size, so a target set too low is
 not reached by any ensemble you would fit. When that happens the result is `NA`
 and the projection says what it would take:
@@ -164,7 +179,17 @@ no assumption about where they came from:
 replicates <- lapply(1:4, function(i) {
   proximity(randomForest(y ~ ., data = training, ntree = 250), newdata = training)
 })
-stability(replicates)
+agreement <- stability(replicates)
+agreement
+```
+
+Its plot shows every one of the $R(R-1)/2$ comparisons, with the median and
+the percentile interval marked. There is no band around a curve here, because
+there is no curve: the object holds one set of dependent agreements, and the
+spread of them is the whole of what it can say.
+
+```{r stability-plot, fig.width = 6, fig.height = 3.4}
+autoplot(agreement)
 ```
 
 ## Choosing between them

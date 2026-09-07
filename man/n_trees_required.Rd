@@ -2,9 +2,12 @@
 % Please edit documentation in R/stability.R
 \name{n_trees_required}
 \alias{n_trees_required}
+\alias{print.proximity_trees}
 \title{How many trees does a stable proximity matrix need?}
 \usage{
 n_trees_required(fit, data, eps = 0.15, max_trees = 2000L)
+
+\method{print}{proximity_trees}(x, ...)
 }
 \arguments{
 \item{fit}{A fitted tree ensemble.}
@@ -17,12 +20,21 @@ dataset may be some way from it.}
 
 \item{max_trees}{Upper bound on the block size to try. The real ceiling is
 half the trees \code{fit} carries, since a block size needs two blocks.}
+
+\item{x}{A \code{proximity_trees} object.}
+
+\item{...}{Unused.}
 }
 \value{
 The smallest \code{B} on the grid meeting the criterion, as an integer,
 or \code{NA_integer_} when none does. The attribute \code{path} holds the grid, the
 number of replicates at each point and the coefficient of variation there;
 \code{projected} holds the extrapolated requirement.
+
+The integer carries the class \code{proximity_trees}, which buys it a
+\code{print()} and an \code{autoplot()} and costs it nothing: arithmetic on it
+returns the plain number, so \code{ntree = n_trees_required(...) + 100} is the
+integer it looks like.
 }
 \description{
 Grows the ensemble in blocks and stops when the entries of the proximity

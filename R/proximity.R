@@ -53,7 +53,7 @@ proximity.randomForest <- function(object,
                                    type = c("inbag", "oob"),
                                    ...) {
   type <- match.arg(type)
-  reject_unused(..., what = "proximity")
+  reject_unused(..., what = "proximity", advice = storage_advice)
 
   if (is.null(newdata)) {
     if (!is.null(object$proximity)) {
@@ -130,7 +130,7 @@ proximity.randomForest <- function(object,
 #' @export
 proximity.ranger <- function(object, newdata = NULL, type = c("inbag", "oob"), ...) {
   type <- match.arg(type)
-  reject_unused(..., what = "proximity")
+  reject_unused(..., what = "proximity", advice = storage_advice)
 
   if (is.null(newdata)) {
     stop(
@@ -208,11 +208,16 @@ stored_prox_type <- function(object) {
 #' returns a dense matrix as though it had been honoured. A wrong answer is
 #' worse than an error, and the argument names are the user's clue.
 #'
+#' `autoplot()` has the same shape of dots and the same trap in it -- `color`
+#' for `colour` would draw an uncoloured plot and say nothing -- so the advice
+#' at the end of the message is the caller's rather than this function's.
+#'
 #' @param ... The dots as the method received them.
 #' @param what The name of the method, for the message.
+#' @param advice What to tell the user to do instead.
 #' @return `NULL`, invisibly. Called for the error.
 #' @noRd
-reject_unused <- function(..., what) {
+reject_unused <- function(..., what, advice) {
   extra <- names(substitute(list(...)))[-1L]
   if (length(list(...)) == 0L) {
     return(invisible(NULL))
@@ -223,9 +228,7 @@ reject_unused <- function(..., what) {
     "`", what, "()` does not have ",
     if (length(named)) paste0("an argument called `", paste(named, collapse = "`, `"), "`") else
       paste0(unnamed, " argument", if (unnamed > 1L) "s" else "", " to take here"),
-    ". Proximities are computed densely, and neither storage form is reachable ",
-    "through `proximity()`: pass the result to `sparsify()`, or build the ",
-    "approximation with `nystrom()`.",
+    ". ", advice,
     call. = FALSE
   )
 }
@@ -403,3 +406,9 @@ print.summary.proximity <- function(x, ...) {
   cat("  euclidean    :", x$euclidean, "\n")
   invisible(x)
 }
+
+storage_advice <- paste(
+  "Proximities are computed densely, and neither storage form is reachable",
+  "through `proximity()`: pass the result to `sparsify()`, or build the",
+  "approximation with `nystrom()`."
+)

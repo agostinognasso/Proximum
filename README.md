@@ -73,11 +73,11 @@ proximity is not a kernel, and `summary()` says so. See
 
 Early development. Extraction from `randomForest` and `ranger`, the
 dissimilarity transforms, the Euclidean diagnostics, the positive
-semi-definite repair, the inference layer, and the scalability and
-stability layers all work. The plots are declared, documented and not
-yet implemented, and calling `autoplot()` raises an error that says
-which phase it belongs to. So does the `streaming` argument that
-`vignette("large-n")` describes and nothing provides.
+semi-definite repair, the inference layer, the scalability and
+stability layers, and the plots all work. What is still declared and
+not provided is the `streaming` argument that `vignette("large-n")`
+describes, and the `loans` data the credit scoring case study is
+written against.
 
 Every number quoted in the documentation comes from a script in
 `inst/simulations/`, and those are meant to be re-run rather than
@@ -88,7 +88,7 @@ believed.
 | F1 | `randomForest` and `ranger`, `proximity` object, transforms, `make_psd()` | mostly done |
 | F2 | `mantel_test()`, `cka()`, `rv_coefficient()`, `permanova()`, `protest()` | done |
 | F3 | `sparsify()`, `nystrom()`, `embedding()`, `stability()`, `n_trees_required()` | done |
-| F4 | `autoplot()`, vignettes, pkgdown | declared |
+| F4 | `autoplot()`, vignettes, pkgdown | done but pkgdown |
 | F5 | CRAN, JSS paper | not started |
 
 The proximity is computed as a sparse Gram matrix, `P = Z Z'/B` with `Z`

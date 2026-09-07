@@ -10,6 +10,8 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 has_rf <- requireNamespace("randomForest", quietly = TRUE)
+has_seriation <- has_rf && requireNamespace("seriation", quietly = TRUE)
+has_igraph <- has_rf && requireNamespace("igraph", quietly = TRUE)
 ```
 
 A random forest partitions the predictor space many times over. Two observations
@@ -179,14 +181,45 @@ Because both engines produce the same object, "do two implementations of the
 same forest represent the data the same way?" becomes a question the inference
 layer can answer, rather than a question nobody can ask.
 
-## From proximity to dissimilarity
+## The views
 
-```{r, eval = has_rf}
-d <- as.dist(px)
-mds <- cmdscale(d, k = 2)
-plot(mds, col = iris$Species, pch = 19, xlab = "", ylab = "",
-     main = "MDS of the forest proximity")
+`autoplot()` draws the object three ways, and which of them answers a question
+depends on the question.
+
+The heatmap orders the rows and columns by a seriation of the induced
+dissimilarity, so that the groups the forest learned line up along the
+diagonal rather than being scattered by the order the rows happened to arrive
+in. The axis labels are dropped with the original ordering: after the
+seriation an index is a position, not an observation.
+
+```{r, eval = has_seriation, fig.width = 5, fig.height = 4.2}
+autoplot(px, type = "heatmap")
 ```
+
+The `"mds"` view is the configuration `embedding()` returns, which is the
+classical scaling of $\sqrt{1 - P}$: the same coordinates as
+`cmdscale(as.dist(px), k = 2)`, agreeing here to 9.3e-16 up to the sign of
+each axis. The colouring is yours to pass. A `proximity` object carries the
+engine, the number of trees and the definition used, and nothing about the
+response, so a plot that coloured by class on its own would be inventing the
+class.
+
+```{r, eval = has_rf, fig.width = 6, fig.height = 4.2}
+autoplot(px, type = "mds", colour = iris$Species)
+```
+
+The `"network"` view keeps the pairs above a threshold and reads the
+communities off the graph they form. That clustering is the forest's own,
+recovered from the proximity, rather than one imposed on the observations from
+outside:
+
+```{r, eval = has_igraph, fig.width = 6, fig.height = 4.6}
+autoplot(px, type = "network", threshold = 0.3)
+```
+
+The first and the last of these need `seriation` and `igraph`, which are
+suggested rather than required and are refused by name when absent. The
+`"mds"` view needs neither.
 
 ## What comes next
 

@@ -243,6 +243,11 @@ print.proximity_stability <- function(x, ...) {
 #'   or `NA_integer_` when none does. The attribute `path` holds the grid, the
 #'   number of replicates at each point and the coefficient of variation there;
 #'   `projected` holds the extrapolated requirement.
+#'
+#'   The integer carries the class `proximity_trees`, which buys it a
+#'   `print()` and an `autoplot()` and costs it nothing: arithmetic on it
+#'   returns the plain number, so `ntree = n_trees_required(...) + 100` is the
+#'   integer it looks like.
 #' @seealso [stability()] for the agreement between replicates that are already
 #'   in hand.
 #' @examplesIf requireNamespace("randomForest", quietly = TRUE)
@@ -294,14 +299,60 @@ n_trees_required <- function(fit, data, eps = 0.15, max_trees = 2000L) {
     # Extrapolating past a target that was met would report a block size below
     # the ones actually tried, which is not a claim the search supports.
     projected = if (is.na(answer)) project_trees(path, eps) else NA_real_,
-    eps = eps
+    eps = eps,
+    class = "proximity_trees"
   )
+}
+
+#' @param x A `proximity_trees` object.
+#' @param ... Unused.
+#' @rdname n_trees_required
+#' @export
+print.proximity_trees <- function(x, ...) {
+  path <- attr(x, "path")
+  answer <- as.integer(unclass(x))
+
+  cat("<proximity_trees>\n")
+  cat("  target  : CV below", attr(x, "eps"), "\n")
+  cat("  searched:", min(path$trees), "to", max(path$trees),
+      paste0("trees per block, ", nrow(path), " block size",
+             if (nrow(path) == 1L) "" else "s"), "\n")
+  if (is.na(answer)) {
+    cat("  answer  : not reached on the grid\n")
+    projected <- attr(x, "projected")
+    if (!is.na(projected)) {
+      cat("  projected:", projected,
+          "trees per block, extrapolated along the fitted law\n")
+    }
+  } else {
+    cat("  answer  :", answer, "trees per block, at CV",
+        format(path$cv[nrow(path)], digits = 3), "\n")
+  }
+  invisible(x)
+}
+
+# Arithmetic on the answer gives back the number, not the object. Measured,
+# because R keeps the attributes of the first operand: without this, `b + 100`
+# comes back classed, carrying the `path` and `eps` of a search that stopped at
+# `b`, and printing it would report an answer that search never gave. The class
+# labels one measurement and does not survive being changed, which is how
+# `difftime` and `factor` treat theirs.
+
+#' @export
+Ops.proximity_trees <- function(e1, e2) {
+  e1 <- if (inherits(e1, "proximity_trees")) as.integer(unclass(e1)) else e1
+  if (nargs() == 1L) {
+    return(do.call(.Generic, list(e1)))
+  }
+  e2 <- if (inherits(e2, "proximity_trees")) as.integer(unclass(e2)) else e2
+  do.call(.Generic, list(e1, e2))
 }
 
 #' The block sizes to try
 #'
-#' Doubling from 25, because the criterion falls as `1/sqrt(B)` and a linear
-#' grid would spend most of its points where the answer barely moves. The
+#' Doubling from 25, because the criterion falls as a power of `B` near one
+#' half and a linear grid would spend most of its points where the answer
+#' barely moves. The
 #' ceiling is always included, so that a run that reaches it has actually
 #' tested it.
 #'
@@ -309,9 +360,12 @@ n_trees_required <- function(fit, data, eps = 0.15, max_trees = 2000L) {
 #' @return An increasing integer vector.
 #' @noRd
 tree_grid <- function(ceiling) {
-  grid <- 25L * 2L^(0:20)
+  # `2L^k` is a double in R however integer its operands, so the grid and the
+  # answer taken off it used to be doubles whenever the target was met, and
+  # `NA_integer_` whenever it was not. The documented return is an integer.
+  grid <- as.integer(25 * 2^(0:20))
   grid <- grid[grid <= ceiling]
-  sort(unique(c(grid, ceiling)))
+  sort(unique(c(grid, as.integer(ceiling))))
 }
 
 #' The aggregate coefficient of variation at one block size
@@ -363,14 +417,32 @@ block_cv <- function(nodes, B, n_blocks) {
 #'   points to fit a line through.
 #' @noRd
 project_trees <- function(path, eps) {
+  fit <- fit_power_law(path)
+  if (is.null(fit)) {
+    return(NA_real_)
+  }
+  ceiling(exp((log(eps) - fit$intercept) / fit$slope))
+}
+
+#' The line through the measured points, on the log scale
+#'
+#' Split out from `project_trees()` because `autoplot()` draws the same line
+#' the projection is read off, and a plot fitted separately from the number it
+#' illustrates would be free to disagree with it.
+#'
+#' @param path The search path.
+#' @return A list with `intercept` and `slope`, or `NULL` when there are too
+#'   few points to fit a line through or the line does not fall.
+#' @noRd
+fit_power_law <- function(path) {
   usable <- path[!is.na(path$cv) & path$cv > 0, , drop = FALSE]
   if (nrow(usable) < 2L) {
-    return(NA_real_)
+    return(NULL)
   }
   line <- stats::lm(log(usable$cv) ~ log(usable$trees))
   slope <- stats::coef(line)[[2L]]
   if (!is.finite(slope) || slope >= 0) {
-    return(NA_real_)
+    return(NULL)
   }
-  ceiling(exp((log(eps) - stats::coef(line)[[1L]]) / slope))
+  list(intercept = stats::coef(line)[[1L]], slope = slope)
 }
