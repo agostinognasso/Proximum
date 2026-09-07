@@ -11,8 +11,8 @@
 <script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Statistical Analysis of Ensemble Proximity Matrices">
-<meta name="description" content="Treats the proximity matrices produced by tree ensembles as first-class statistical objects rather than as model by-products. Provides a unified extractor across ensemble engines, in-bag and out-of-bag definitions, transformations to dissimilarities with metric diagnostics, corrections that make an indefinite proximity usable as a kernel, and permutation inference for comparing two proximity matrices. Bootstrap stability assessment, approximations for large samples and dedicated visualisations are planned and not yet implemented; the functions that will provide them raise an error naming the release they are scheduled for.">
-<meta property="og:description" content="Treats the proximity matrices produced by tree ensembles as first-class statistical objects rather than as model by-products. Provides a unified extractor across ensemble engines, in-bag and out-of-bag definitions, transformations to dissimilarities with metric diagnostics, corrections that make an indefinite proximity usable as a kernel, and permutation inference for comparing two proximity matrices. Bootstrap stability assessment, approximations for large samples and dedicated visualisations are planned and not yet implemented; the functions that will provide them raise an error naming the release they are scheduled for.">
+<meta name="description" content="Treats the proximity matrices produced by tree ensembles as first-class statistical objects rather than as model by-products. Provides a unified extractor across ensemble engines, in-bag and out-of-bag definitions, transformations to dissimilarities with metric diagnostics, corrections that make an indefinite proximity usable as a kernel, and permutation inference for comparing two proximity matrices or partitioning one across the terms of a design. Bootstrap stability assessment, approximations for large samples and dedicated visualisations are planned and not yet implemented; the functions that will provide them raise an error naming the release they are scheduled for.">
+<meta property="og:description" content="Treats the proximity matrices produced by tree ensembles as first-class statistical objects rather than as model by-products. Provides a unified extractor across ensemble engines, in-bag and out-of-bag definitions, transformations to dissimilarities with metric diagnostics, corrections that make an indefinite proximity usable as a kernel, and permutation inference for comparing two proximity matrices or partitioning one across the terms of a design. Bootstrap stability assessment, approximations for large samples and dedicated visualisations are planned and not yet implemented; the functions that will provide them raise an error naming the release they are scheduled for.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -61,7 +61,7 @@
 <!-- badges: start -->
 
 <p>The proximity matrix of a tree ensemble records how often two observations fall in the same leaf. <code>randomForest</code> will compute it for you and then leave you to it: there is no way in R to test whether two forests represent the data the same way, to ask how many trees a stable proximity needs, or to compute the thing at all when <code>n</code> is large.</p>
-<p><code>Proximum</code> treats the proximity matrix as a first-class statistical object rather than as a by-product of the model: one extractor across engines, in-bag and out-of-bag definitions, the transformations and metric diagnostics that go with them, and permutation inference for comparing two matrices. Stability diagnostics, scalable approximations and the plots are planned; the functions that will provide them are documented and raise an error naming their release.</p>
+<p><code>Proximum</code> treats the proximity matrix as a first-class statistical object rather than as a by-product of the model: one extractor across engines, in-bag and out-of-bag definitions, the transformations and metric diagnostics that go with them, and permutation inference for comparing two matrices or partitioning one. Stability diagnostics, scalable approximations and the plots are planned; the functions that will provide them are documented and raise an error naming their release.</p>
 <p>It is the methodological layer underneath <a href="https://cran.r-project.org/package=e2tree" class="external-link"><code>e2tree</code></a>, which reconstructs a forest’s behaviour from exactly this similarity structure.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -98,7 +98,8 @@
 <div class="section level2">
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h2>
-<p>Early development. Extraction from <code>randomForest</code> and <code>ranger</code>, the dissimilarity transforms, the Euclidean diagnostics, the positive semi-definite repair and the first half of the inference layer all work. The rest is declared, documented and not yet implemented, and calling one of those functions raises an error that says which phase it belongs to.</p>
+<p>Early development. Extraction from <code>randomForest</code> and <code>ranger</code>, the dissimilarity transforms, the Euclidean diagnostics, the positive semi-definite repair and the whole inference layer all work. The stability and scalability layers and the plots are declared, documented and not yet implemented, and calling one of those functions raises an error that says which phase it belongs to.</p>
+<p>Every number quoted in the documentation comes from a script in <code>inst/simulations/</code>, and those are meant to be re-run rather than believed.</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -121,16 +122,9 @@
 <tr>
 <td>F2</td>
 <td>
-<code><a href="reference/mantel_test.html">mantel_test()</a></code>, <code><a href="reference/cka.html">cka()</a></code>, <code><a href="reference/cka.html">rv_coefficient()</a></code>
+<code><a href="reference/mantel_test.html">mantel_test()</a></code>, <code><a href="reference/cka.html">cka()</a></code>, <code><a href="reference/cka.html">rv_coefficient()</a></code>, <code><a href="reference/permanova.html">permanova()</a></code>, <code><a href="reference/protest.html">protest()</a></code>
 </td>
 <td>done</td>
-</tr>
-<tr>
-<td>F2</td>
-<td>
-<code><a href="reference/permanova.html">permanova()</a></code>, <code><a href="reference/protest.html">protest()</a></code>
-</td>
-<td>declared</td>
 </tr>
 <tr>
 <td>F3</td>

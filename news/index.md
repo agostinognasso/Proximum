@@ -29,6 +29,69 @@
   alignment stayed inside `[0, 1]` every time and was below the
   corrected one every time, by 0.089 on average and by as much as 0.154.
 
+- [`permanova()`](../reference/permanova.md) is implemented: the
+  McArdle-Anderson partition of the induced dissimilarity across the
+  terms of a one-sided formula, with a permutation test on each. The
+  sums of squares are sequential and every term is tested against the
+  residual of the full model, which is what
+  `vegan::adonis2(by = "terms")` does; the two were checked to agree on
+  `Df`, `SumOfSqs`, `R2` and `F` exactly, and their p-values correlated
+  at 1.000 over 300 replicates. Measured in
+  `inst/simulations/permanova-protest-calibration.R` over 600
+  replicates, the power against the response the forest was trained on
+  was 1.000 in-bag and out-of-bag alike.
+
+- Where a term sits in the formula changes the level it is tested at,
+  and by enough to matter. On a term that explains nothing by
+  construction, at a nominal 0.05 with a Monte Carlo standard error near
+  0.009: 0.047 alone, 0.048 beside another null term, 0.105 placed
+  before a term taking a seventh of the variation, and 0.020 placed
+  after it. `adonis2()` gave the same rates on the same replicates, so
+  this is a property of sequential permutation testing and not of this
+  implementation. The rule it implies is in
+  [`?permanova`](../reference/permanova.md): put the terms you already
+  believe in first and the term you are testing last.
+
+- The out-of-bag Gower matrix is indefinite, so a term’s sum of squares
+  could come out negative and its R-squared could leave `[0, 1]`. Over
+  1800 out-of-bag values neither happened, and the range observed was
+  0.008 to 0.942. The risk is real in principle and did not appear in
+  practice, which is the same shape as the finding behind the
+  [`cka()`](../reference/cka.md) refusal.
+
+- [`protest()`](../reference/protest.md) is implemented: classical
+  scaling of each induced dissimilarity to `k` dimensions, then the
+  symmetric Procrustes superimposition, reported as with the PROTEST
+  permutation test. It agrees with
+  [`vegan::protest()`](https://vegandevs.github.io/vegan/reference/procrustes.html)
+  on the statistic and the residual to seven decimals. Over 600
+  replicates the rejection rate on forests fitted to independent data
+  was between 0.033 and 0.050 against a nominal 0.05, at every `k` tried
+  and on both definitions of the proximity, and the power on forests
+  fitted to the same data was 1.000.
+
+- The Procrustes statistic is not monotone in `k`, which I had assumed
+  it was. Both configurations are rescaled to unit sum of squares at
+  each `k`, so a further dimension changes what is compared rather than
+  adding to it. Over 600 replicates the mean correlation on unrelated
+  forests rose from 0.103 at two dimensions to 0.173 at six, and on
+  forests fitted to the same data it fell between two and six in 78% of
+  replicates in-bag and 98% out-of-bag.
+
+- [`permanova()`](../reference/permanova.md) and
+  [`protest()`](../reference/protest.md) refuse a proximity carrying
+  undefined pairs, rather than dropping them as
+  [`mantel_test()`](../reference/mantel_test.md) does. A sum of squares
+  is a quadratic form over the whole matrix and classical scaling needs
+  every distance, so there is no honest per-pair rule available to
+  either. In the calibration study a 25-tree out-of-bag proximity was
+  refused in every one of 300 replicates and a 200-tree one in none.
+
+- Both gain a `transform` argument, `"sqrt"` or `"linear"`, passed to
+  [`as_dissimilarity()`](../reference/as_dissimilarity.md). Neither
+  could be reached otherwise: they take a proximity, and handing them a
+  dissimilarity would transform it twice.
+
 - [`proximity()`](../reference/proximity.md) gains a method for `ranger`
   fits, with the same in-bag and out-of-bag definitions. The leaf
   co-occurrence engine now normalises each tree’s leaf labels, since

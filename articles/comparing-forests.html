@@ -186,18 +186,138 @@ costs is a decision about your data.</p>
 </div>
 </div>
 <div class="section level2">
+<h2 id="superimposing-the-two-configurations">Superimposing the two configurations<a class="anchor" aria-label="anchor" href="#superimposing-the-two-configurations"></a>
+</h2>
+<p><code><a href="../reference/protest.html">protest()</a></code> asks the same question geometrically. Each
+matrix is reduced to a configuration of <code>k</code> dimensions by
+classical scaling, and the two are superimposed by the best translation,
+rotation, reflection and rescaling. What is left over is the residual
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>m</mi><mn>2</mn></msup><annotation encoding="application/x-tex">m^2</annotation></semantics></math>,
+and the reported statistic is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>r</mi><mo>=</mo><msqrt><mrow><mn>1</mn><mo>−</mo><msup><mi>m</mi><mn>2</mn></msup></mrow></msqrt></mrow><annotation encoding="application/x-tex">r = \sqrt{1 - m^2}</annotation></semantics></math>,
+so a larger value is more agreement.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/protest.html">protest</a></span><span class="op">(</span><span class="va">px1</span>, <span class="va">px2</span>, n_perm <span class="op">=</span> <span class="fl">999</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  Procrustes correlation (PROTEST, 2 dimensions, 999 permutations)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; data:  px1 and px2</span></span>
+<span><span class="co">#&gt; r = 0.99902, dimensions = 2, permutations = 999, p-value = 0.001</span></span>
+<span><span class="co">#&gt; alternative hypothesis: greater</span></span></code></pre></div>
+<p>The null permutes the rows of the second configuration. That is the
+same null as permuting the second proximity matrix and scaling it again,
+because classical scaling commutes with relabelling, and it costs one
+permutation of a small matrix rather than one eigendecomposition of a
+large one.</p>
+<p><code>k</code> is part of the question. The residual is not monotone
+in it, because both configurations are rescaled to unit sum of squares
+before the fit, so a further dimension changes what is being compared
+rather than adding to it.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">4</span>, <span class="fl">6</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">k</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/unname.html" class="external-link">unname</a></span><span class="op">(</span><span class="fu"><a href="../reference/protest.html">protest</a></span><span class="op">(</span><span class="va">px1</span>, <span class="va">px2</span>, k <span class="op">=</span> <span class="va">k</span>, n_perm <span class="op">=</span> <span class="fl">99</span><span class="op">)</span><span class="op">$</span><span class="va">statistic</span><span class="op">)</span>,</span>
+<span>       <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0.9990243 0.9798168 0.9878629</span></span></code></pre></div>
+<p>Measured over 600 replicates, on forests fitted to unrelated data the
+mean correlation rose by half again between two dimensions and six, so a
+<code>k</code> chosen after seeing the answer is a <code>k</code> chosen
+to flatter it. Fix it first. The level holds across the range either
+way: on independent data the test rejected between 0.033 and 0.050 of
+the time at a nominal 0.05, at every <code>k</code> tried.</p>
+</div>
+<div class="section level2">
+<h2 id="partitioning-one-matrix">Partitioning one matrix<a class="anchor" aria-label="anchor" href="#partitioning-one-matrix"></a>
+</h2>
+<p>The two functions above compare two matrices.
+<code><a href="../reference/permanova.html">permanova()</a></code> takes one apart, asking how much of the
+structure the forest learned is explained by the response and how much
+by covariates the model never saw.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/permanova.html">permanova</a></span><span class="op">(</span><span class="va">px2</span>, <span class="op">~</span> <span class="va">Species</span> <span class="op">+</span> <span class="va">Sepal.Width</span>, data <span class="op">=</span> <span class="va">df</span>, n_perm <span class="op">=</span> <span class="fl">999</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Permutation test for the proximity dissimilarity</span></span>
+<span><span class="co">#&gt; Terms added sequentially (first to last), 999 permutations of the observations</span></span>
+<span><span class="co">#&gt; Dissimilarity: sqrt(1 - P) on px2</span></span>
+<span><span class="co">#&gt; Model: ~Species + Sepal.Width</span></span>
+<span><span class="co">#&gt;             Df SumOfSqs      R2        F Pr(&gt;F)    </span></span>
+<span><span class="co">#&gt; Species      2  16.2692 0.78115 105.8364  0.001 ***</span></span>
+<span><span class="co">#&gt; Sepal.Width  1   0.2539 0.01219   3.3036  0.024 *  </span></span>
+<span><span class="co">#&gt; Residual    56   4.3042 0.20666                    </span></span>
+<span><span class="co">#&gt; Total       59  20.8272 1.00000                    </span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<p><code>Species</code> is what the forest was trained on, so it takes
+most of the variation and the p-value is the smallest the permutation
+count allows. <code>Sepal.Width</code> is a predictor the forest did
+see, and what it gets here is what it adds after <code>Species</code>,
+not what it would take on its own.</p>
+<div class="section level3">
+<h3 id="the-order-of-the-terms-is-part-of-the-question">The order of the terms is part of the question<a class="anchor" aria-label="anchor" href="#the-order-of-the-terms-is-part-of-the-question"></a>
+</h3>
+<p>The sums of squares are sequential and every term is tested against
+the residual of the full model, which is what
+<code>vegan::adonis2(by = "terms")</code> does. That has a consequence
+worth stating plainly, because it decides how you write the formula.</p>
+<p>A permutation destroys the whole matrix, the other terms’
+contribution included. So the observed pseudo-F of an early term is
+divided by a residual that a strong later term has already shrunk, while
+its permuted values are divided by residuals nothing has shrunk.
+Measured over 600 replicates on a term that explains nothing by
+construction, at a nominal level of 0.05:</p>
+<table class="table">
+<thead><tr class="header">
+<th>The model</th>
+<th>Rejection rate</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>the null term alone</td>
+<td>0.047</td>
+</tr>
+<tr class="even">
+<td>beside another null term</td>
+<td>0.048</td>
+</tr>
+<tr class="odd">
+<td>before a term taking a seventh of the variation</td>
+<td>0.105</td>
+</tr>
+<tr class="even">
+<td>after that same term</td>
+<td>0.020</td>
+</tr>
+</tbody>
+</table>
+<p><code>adonis2()</code> was measured on the same replicates and gave
+the same rates, so this is what sequential permutation testing is, not a
+defect of this implementation. The rule that follows is short: put the
+terms you already believe in first, and the term you are testing
+last.</p>
+</div>
+<div class="section level3">
+<h3 id="undefined-pairs-are-refused-rather-than-dropped">Undefined pairs are refused rather than dropped<a class="anchor" aria-label="anchor" href="#undefined-pairs-are-refused-rather-than-dropped"></a>
+</h3>
+<p><code><a href="../reference/mantel_test.html">mantel_test()</a></code> can drop a pair that was never jointly out
+of bag, because a correlation is a sum over pairs. A sum of squares is a
+quadratic form over the whole matrix, and classical scaling needs every
+distance, so <code><a href="../reference/permanova.html">permanova()</a></code> and <code><a href="../reference/protest.html">protest()</a></code> refuse
+such a matrix instead. In the calibration study, a 25-tree out-of-bag
+proximity was refused in every one of 300 replicates; at 200 trees it
+was refused in none.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">small</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">df</span>, ntree <span class="op">=</span> <span class="fl">15</span>, keep.inbag <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/permanova.html">permanova</a></span><span class="op">(</span><span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">small</span>, newdata <span class="op">=</span> <span class="va">df</span>, type <span class="op">=</span> <span class="st">"oob"</span><span class="op">)</span>, <span class="op">~</span> <span class="va">Species</span>, data <span class="op">=</span> <span class="va">df</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> `px` leaves 236 of its 1770 pairs undefined, because the two observations were never jointly out of bag. A sum of squares is a quadratic form over the whole matrix, so unlike a correlation it cannot be taken over the pairs that are defined. Grow more trees, or use the in-bag proximity.</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
 <h2 id="still-to-come">Still to come<a class="anchor" aria-label="anchor" href="#still-to-come"></a>
 </h2>
-<p><code><a href="../reference/permanova.html">permanova()</a></code>, which will partition the variation in the
-induced dissimilarity across the terms of a formula, and
-<code><a href="../reference/protest.html">protest()</a></code>, which will superimpose the two multidimensional
-scaling configurations, are the rest of phase F2 and are not
-implemented. So is the motivating case underneath all of this:
-<code>e2tree</code> approximates a forest with a single tree, and
-whether that tree preserves the forest’s view of the data is exactly a
-question about two proximity matrices. That comparison needs a
+<p>Phase F2 is complete. What is not is the motivating case underneath
+all of it: <code>e2tree</code> approximates a forest with a single tree,
+and whether that tree preserves the forest’s view of the data is exactly
+a question about two proximity matrices. That comparison needs a
 <code><a href="../reference/proximity.html">proximity()</a></code> method for <code>e2tree</code> objects, which
-does not exist yet either.</p>
+does not exist yet.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

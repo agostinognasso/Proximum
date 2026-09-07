@@ -157,7 +157,7 @@ c(
   oob   = min(eigen(unclass(px_oob), symmetric = TRUE, only.values = TRUE)$values)
 )
 #>         inbag           oob 
-#> -9.601070e-15 -6.469597e-01
+#> -1.265658e-14 -6.469597e-01
 ```
 
 The in-bag minimum is zero up to rounding; the out-of-bag one is not

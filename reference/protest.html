@@ -52,7 +52,7 @@ together with the PROTEST permutation test of its significance.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">protest</span><span class="op">(</span><span class="va">px1</span>, <span class="va">px2</span>, k <span class="op">=</span> <span class="fl">2L</span>, n_perm <span class="op">=</span> <span class="fl">999</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">protest</span><span class="op">(</span><span class="va">px1</span>, <span class="va">px2</span>, k <span class="op">=</span> <span class="fl">2L</span>, n_perm <span class="op">=</span> <span class="fl">999</span>, transform <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sqrt"</span>, <span class="st">"linear"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -60,7 +60,8 @@ together with the PROTEST permutation test of its significance.</p>
 
 
 <dl><dt id="arg-px-px-">px1, px2<a class="anchor" aria-label="anchor" href="#arg-px-px-"></a></dt>
-<dd><p><code>proximity</code> objects on the same <code>n</code> observations.</p></dd>
+<dd><p><code>proximity</code> objects, or symmetric numeric matrices, on the
+same <code>n</code> observations.</p></dd>
 
 
 <dt id="arg-k">k<a class="anchor" aria-label="anchor" href="#arg-k"></a></dt>
@@ -70,16 +71,92 @@ together with the PROTEST permutation test of its significance.</p>
 <dt id="arg-n-perm">n_perm<a class="anchor" aria-label="anchor" href="#arg-n-perm"></a></dt>
 <dd><p>Number of permutations for the PROTEST test.</p></dd>
 
+
+<dt id="arg-transform">transform<a class="anchor" aria-label="anchor" href="#arg-transform"></a></dt>
+<dd><p>Dissimilarity to scale, passed to <code><a href="as_dissimilarity.html">as_dissimilarity()</a></code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An object of class <code>htest</code>.</p>
+    <p>An object of class <code>htest</code>. The number of dimensions and the number
+of permutations are in <code>parameter</code>; the residual \(m^2\) is in <code>m2</code> and
+the permuted statistics in <code>null_distribution</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Not implemented yet: scheduled for phase F2.</p>
+    <p>Where <code><a href="mantel_test.html">mantel_test()</a></code> correlates the pairwise values and <code><a href="cka.html">cka()</a></code> aligns the
+matrices as kernels, this asks a geometric question: after each matrix has
+been reduced to a configuration of <code>k</code> dimensions, can one be laid on top of
+the other? The superimposition is free to translate, rotate, reflect and
+rescale, since none of those change the dissimilarities the configuration
+encodes, and what is left over after the best such fit is \(m^2\).</p>
+<p>Both configurations are centred and scaled to unit sum of squares before
+fitting, which makes the comparison symmetric: <code>protest(a, b)</code> and
+<code>protest(b, a)</code> report the same number. The reported statistic is
+\(r = \sqrt{1 - m^2}\), which is 1 for a perfect fit and 0 for none, so
+that a larger value means more agreement.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="the-null">The null<a class="anchor" aria-label="anchor" href="#the-null"></a></h2>
+
+
+<p>The rows of the second configuration are permuted, which relabels its
+observations while leaving the first alone. That is the same null as
+permuting the rows and columns of the second proximity matrix and scaling
+it again, because classical scaling commutes with relabelling: the
+configuration of a permuted dissimilarity is the permuted configuration.
+Permuting the configuration is the cheap way to compute it, not a different
+test.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="what-k-costs">What <code>k</code> costs<a class="anchor" aria-label="anchor" href="#what-k-costs"></a></h2>
+
+
+<p>The statistic depends on <code>k</code>, and it is not monotone in it. Both
+configurations are rescaled to unit sum of squares before the fit, so a
+further dimension changes what is being compared rather than adding to what
+was compared already, and the correlation can fall as easily as it can rise.
+Measured over 600 replicates: on forests fitted to unrelated data the mean
+correlation rose by half again between two dimensions and six, while on
+forests fitted to the same data it fell in most replicates. Both directions
+say the same thing. <code>k</code> is part of the question, not a knob to turn until
+the answer improves, so fix it before looking. Two dimensions is the default
+because it is what a reader will plot, not because it is enough.</p>
+<p>The level holds across the range regardless. On two forests fitted to
+independent data the test rejected between 0.033 and 0.050 of the time at a
+nominal 0.05, at every <code>k</code> tried and on both definitions of the proximity,
+and on two forests fitted to the same data it rejected in every replicate.</p>
+<p>A dissimilarity that is not Euclidean, and the out-of-bag one is not, has no
+exact configuration in any number of dimensions. The scaling discards the
+negative eigenvalues rather than representing them, which is a second reason
+the answer moves with <code>k</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p><code><a href="mantel_test.html">mantel_test()</a></code> for the same comparison on the pairwise values,
+<code><a href="permanova.html">permanova()</a></code> for a partition of one matrix rather than a comparison of
+two.</p></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">iris</span><span class="op">)</span>, <span class="fl">60</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">shallow</span> <span class="op">&lt;-</span> <span class="fu">randomForest</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">iris</span><span class="op">[</span><span class="va">rows</span>, <span class="op">]</span>,</span></span>
+<span class="r-in"><span>                                      ntree <span class="op">=</span> <span class="fl">100</span>, maxnodes <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">deep</span> <span class="op">&lt;-</span> <span class="fu">randomForest</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">iris</span><span class="op">[</span><span class="va">rows</span>, <span class="op">]</span>,</span></span>
+<span class="r-in"><span>                                   ntree <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">protest</span><span class="op">(</span><span class="fu"><a href="proximity.html">proximity</a></span><span class="op">(</span><span class="va">shallow</span>, newdata <span class="op">=</span> <span class="va">iris</span><span class="op">[</span><span class="va">rows</span>, <span class="op">]</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>        <span class="fu"><a href="proximity.html">proximity</a></span><span class="op">(</span><span class="va">deep</span>, newdata <span class="op">=</span> <span class="va">iris</span><span class="op">[</span><span class="va">rows</span>, <span class="op">]</span><span class="op">)</span>, n_perm <span class="op">=</span> <span class="fl">99</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 	Procrustes correlation (PROTEST, 2 dimensions, 99 permutations)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> data:  proximity(shallow, newdata = iris[rows, ]) and proximity(deep, newdata = iris[rows, ])</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> r = 0.99914, dimensions = 2, permutations = 99, p-value = 0.01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> alternative hypothesis: greater</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

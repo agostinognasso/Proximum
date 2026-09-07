@@ -131,15 +131,129 @@ cka(make_psd(px2), make_psd(oob))
 #> [1] 0.9874322
 ```
 
+## Superimposing the two configurations
+
+[`protest()`](../reference/protest.md) asks the same question
+geometrically. Each matrix is reduced to a configuration of `k`
+dimensions by classical scaling, and the two are superimposed by the
+best translation, rotation, reflection and rescaling. What is left over
+is the residual $`m^2`$, and the reported statistic is
+$`r = \sqrt{1 - m^2}`$, so a larger value is more agreement.
+
+``` r
+
+protest(px1, px2, n_perm = 999)
+#> 
+#>  Procrustes correlation (PROTEST, 2 dimensions, 999 permutations)
+#> 
+#> data:  px1 and px2
+#> r = 0.99902, dimensions = 2, permutations = 999, p-value = 0.001
+#> alternative hypothesis: greater
+```
+
+The null permutes the rows of the second configuration. That is the same
+null as permuting the second proximity matrix and scaling it again,
+because classical scaling commutes with relabelling, and it costs one
+permutation of a small matrix rather than one eigendecomposition of a
+large one.
+
+`k` is part of the question. The residual is not monotone in it, because
+both configurations are rescaled to unit sum of squares before the fit,
+so a further dimension changes what is being compared rather than adding
+to it.
+
+``` r
+
+vapply(c(2, 4, 6), function(k) unname(protest(px1, px2, k = k, n_perm = 99)$statistic),
+       numeric(1))
+#> [1] 0.9990243 0.9798168 0.9878629
+```
+
+Measured over 600 replicates, on forests fitted to unrelated data the
+mean correlation rose by half again between two dimensions and six, so a
+`k` chosen after seeing the answer is a `k` chosen to flatter it. Fix it
+first. The level holds across the range either way: on independent data
+the test rejected between 0.033 and 0.050 of the time at a nominal 0.05,
+at every `k` tried.
+
+## Partitioning one matrix
+
+The two functions above compare two matrices.
+[`permanova()`](../reference/permanova.md) takes one apart, asking how
+much of the structure the forest learned is explained by the response
+and how much by covariates the model never saw.
+
+``` r
+
+permanova(px2, ~ Species + Sepal.Width, data = df, n_perm = 999)
+#> Permutation test for the proximity dissimilarity
+#> Terms added sequentially (first to last), 999 permutations of the observations
+#> Dissimilarity: sqrt(1 - P) on px2
+#> Model: ~Species + Sepal.Width
+#>             Df SumOfSqs      R2        F Pr(>F)    
+#> Species      2  16.2692 0.78115 105.8364  0.001 ***
+#> Sepal.Width  1   0.2539 0.01219   3.3036  0.024 *  
+#> Residual    56   4.3042 0.20666                    
+#> Total       59  20.8272 1.00000                    
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+`Species` is what the forest was trained on, so it takes most of the
+variation and the p-value is the smallest the permutation count allows.
+`Sepal.Width` is a predictor the forest did see, and what it gets here
+is what it adds after `Species`, not what it would take on its own.
+
+### The order of the terms is part of the question
+
+The sums of squares are sequential and every term is tested against the
+residual of the full model, which is what `vegan::adonis2(by = "terms")`
+does. That has a consequence worth stating plainly, because it decides
+how you write the formula.
+
+A permutation destroys the whole matrix, the other terms’ contribution
+included. So the observed pseudo-F of an early term is divided by a
+residual that a strong later term has already shrunk, while its permuted
+values are divided by residuals nothing has shrunk. Measured over 600
+replicates on a term that explains nothing by construction, at a nominal
+level of 0.05:
+
+| The model                                       | Rejection rate |
+|-------------------------------------------------|----------------|
+| the null term alone                             | 0.047          |
+| beside another null term                        | 0.048          |
+| before a term taking a seventh of the variation | 0.105          |
+| after that same term                            | 0.020          |
+
+`adonis2()` was measured on the same replicates and gave the same rates,
+so this is what sequential permutation testing is, not a defect of this
+implementation. The rule that follows is short: put the terms you
+already believe in first, and the term you are testing last.
+
+### Undefined pairs are refused rather than dropped
+
+[`mantel_test()`](../reference/mantel_test.md) can drop a pair that was
+never jointly out of bag, because a correlation is a sum over pairs. A
+sum of squares is a quadratic form over the whole matrix, and classical
+scaling needs every distance, so
+[`permanova()`](../reference/permanova.md) and
+[`protest()`](../reference/protest.md) refuse such a matrix instead. In
+the calibration study, a 25-tree out-of-bag proximity was refused in
+every one of 300 replicates; at 200 trees it was refused in none.
+
+``` r
+
+small <- randomForest(Species ~ ., data = df, ntree = 15, keep.inbag = TRUE)
+permanova(proximity(small, newdata = df, type = "oob"), ~ Species, data = df)
+#> Error:
+#> ! `px` leaves 236 of its 1770 pairs undefined, because the two observations were never jointly out of bag. A sum of squares is a quadratic form over the whole matrix, so unlike a correlation it cannot be taken over the pairs that are defined. Grow more trees, or use the in-bag proximity.
+```
+
 ## Still to come
 
-[`permanova()`](../reference/permanova.md), which will partition the
-variation in the induced dissimilarity across the terms of a formula,
-and [`protest()`](../reference/protest.md), which will superimpose the
-two multidimensional scaling configurations, are the rest of phase F2
-and are not implemented. So is the motivating case underneath all of
-this: `e2tree` approximates a forest with a single tree, and whether
+Phase F2 is complete. What is not is the motivating case underneath all
+of it: `e2tree` approximates a forest with a single tree, and whether
 that tree preserves the forest’s view of the data is exactly a question
 about two proximity matrices. That comparison needs a
 [`proximity()`](../reference/proximity.md) method for `e2tree` objects,
-which does not exist yet either.
+which does not exist yet.
