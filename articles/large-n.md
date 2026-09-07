@@ -1,0 +1,60 @@
+# Proximity matrices when n is large
+
+> **Status.** The scalability layer is scheduled for phase F3. This
+> vignette states the problem and fixes the interface.
+
+A proximity matrix is $`n \times n`$. At $`n = 10^4`$ that is 800 MB in
+double precision; at $`n = 10^5`$ it is 80 GB. The ensemble happily fits
+data at both sizes, so the matrix, not the model, is what makes the
+method unusable. This is not a hypothetical: it is the wall the `e2tree`
+work hit on the Fannie Mae and HMDA data.
+
+Three ways round it, in increasing order of how much they give up.
+
+## Sparsity
+
+Most pairs never share a leaf, so most entries are exactly zero.
+Thresholding and storing the result as a sparse matrix is lossless for
+every pair above the threshold.
+
+``` r
+
+px <- proximity(rf, newdata = df, sparse = TRUE, threshold = 0.05)
+```
+
+## Landmarks and the Nystrom approximation
+
+Compute the proximity exactly on $`m \ll n`$ landmark observations, then
+extend it to the rest by projection:
+
+``` math
+\tilde{P} = P_{n,m}\, P_{m,m}^{-1}\, P_{m,n}.
+```
+
+Stratifying the landmark sample on the response keeps the rare class
+represented.
+
+``` r
+
+px_nys <- nystrom(rf, data = df, landmarks = 500, strata = df$y)
+```
+
+## Never materialising the matrix
+
+When the quantity of interest is a scalar, a Mantel correlation or a
+CKA, the matrix can be traversed in blocks and discarded. The statistic
+is accumulated in a streaming fashion and the full $`n \times n`$ object
+is never allocated.
+
+``` r
+
+mantel_test(rf1, rf2, data = df, streaming = TRUE)
+```
+
+## Choosing between them
+
+| $`n`$ | Strategy | Cost |
+|----|----|----|
+| $`\le 5{,}000`$ | Dense, exact | Nothing given up |
+| $`5{,}000`$–$`50{,}000`$ | Sparse, exact above threshold | Small proximities lost |
+| $`> 50{,}000`$ | Nystrom, or streaming statistics | Rank-$`m`$ approximation |

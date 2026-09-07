@@ -1,0 +1,41 @@
+# A credit scoring case study
+
+> **Status.** Placeholder. The case study lands with the inference layer
+> (phase F2) and the scalability layer (phase F3), since a realistic
+> credit portfolio needs both.
+
+Credit scoring is the running example across `Proximum`, `rankimp` and
+`e2tree`, for three reasons. The regulatory context makes explanation a
+requirement rather than a nicety; the data are large enough that the
+$`O(n^2)`$ cost of a proximity matrix bites; and the predictors are
+correlated enough that different importance measures genuinely disagree,
+which is what `rankimp` exists to handle.
+
+## Questions this vignette will answer
+
+1.  Do the borrowers the forest treats as similar form recognisable risk
+    segments, or does the proximity structure cut across the segments a
+    credit analyst would draw by hand?
+2.  Does the proximity structure survive a shift in the sampling window,
+    or does the forest reorganise its view of the portfolio from one
+    year to the next?
+3.  How much of the proximity is explained by the default indicator, and
+    how much by protected attributes the model was never given? This is
+    a fairness diagnostic that does not require the model to have used
+    the attribute.
+
+## Sketch
+
+``` r
+
+library(Proximum)
+
+rf <- randomForest::randomForest(default ~ ., data = loans, keep.inbag = TRUE)
+px <- proximity(rf, newdata = loans, type = "oob")
+
+# Question 1
+autoplot(px, type = "network")
+
+# Question 3
+permanova(px, ~ default + applicant_race, data = loans)
+```
