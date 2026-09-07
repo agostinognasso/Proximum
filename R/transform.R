@@ -14,6 +14,7 @@
 #' @export
 as_dissimilarity <- function(px, transform = c("sqrt", "linear")) {
   transform <- match.arg(transform)
+  reject_lossy_storage(px, "px")
   P <- as.matrix(unclass(px))
   D <- switch(transform, sqrt = sqrt(1 - P), linear = 1 - P)
   diag(D) <- 0
@@ -57,6 +58,10 @@ is_euclidean <- function(d, tol = 1e-8) {
 #' @return The Gower centred matrix, with the dimnames of `as.matrix(d)`.
 #' @export
 double_centre <- function(d) {
+  # `as.matrix()` would densify a sparse or factored proximity here without
+  # saying so, and this is the one entry point that reaches them by dispatch
+  # rather than by coercion.
+  reject_lossy_storage(d, "d")
   D2 <- as.matrix(d)^2
   row_means <- rowMeans(D2)
   grand_mean <- mean(row_means)

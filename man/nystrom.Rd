@@ -2,9 +2,12 @@
 % Please edit documentation in R/nystrom.R
 \name{nystrom}
 \alias{nystrom}
+\alias{print.proximity_nystrom}
 \title{Nystrom approximation of a proximity matrix}
 \usage{
-nystrom(fit, data, landmarks = 500L, strata = NULL)
+nystrom(fit, data, landmarks = 500L, strata = NULL, tol = 1e-08)
+
+\method{print}{proximity_nystrom}(x, ...)
 }
 \arguments{
 \item{fit}{A fitted tree ensemble.}
@@ -12,19 +15,132 @@ nystrom(fit, data, landmarks = 500L, strata = NULL)
 \item{data}{The data on which proximities are computed.}
 
 \item{landmarks}{Number of landmark observations, or an integer vector of
-row indices to use as landmarks.}
+row indices to use as landmarks. A single number is a count; two or more
+are indices. A count of \code{n} or more takes every row, which makes the
+result exact.}
 
-\item{strata}{Optional factor for stratified sampling of the landmarks.}
+\item{strata}{Optional factor of length \code{n} for stratified sampling of the
+landmarks. Allocation is proportional, by largest remainder, with at least
+one landmark per level. Use it when a class is rare enough that a simple
+sample would miss it.}
+
+\item{tol}{Relative tolerance on the eigenvalues of the landmark block.
+Directions below \code{tol} times the largest are discarded.}
+
+\item{x}{A \code{proximity_nystrom} object.}
+
+\item{...}{Unused.}
 }
 \value{
 An object of class \code{proximity_nystrom}.
 }
 \description{
-The proximity matrix is \eqn{n \times n}, so it stops fitting in memory
-well before the ensemble stops fitting the data. The Nystrom approximation
+The proximity matrix is \eqn{n \times n}, so it stops fitting in memory well
+before the ensemble stops fitting the data: 31 MB at n = 2,000 and about
+760 MB at n = 10,000. The Nystrom approximation
 \deqn{\tilde{P} = P_{n,m} P_{m,m}^{-1} P_{m,n}}
-reconstructs it from \code{m} landmark observations, with \eqn{m \ll n}.
+reconstructs it from \code{m} landmark observations, with \eqn{m \ll n}, and this
+function never forms either side of that identity.
 }
-\details{
-Not implemented yet: scheduled for phase F3.
+\section{What is stored}{
+
+Writing \eqn{C = P_{n,m}} and \eqn{W = P_{m,m} = U \Lambda U^{\top}}, the
+approximation factors as \eqn{\tilde{P} = L L^{\top}} with
+\eqn{L = C U \Lambda^{-1/2}}, an \eqn{n \times r} matrix. That is what the
+object holds. The cost is \eqn{O(nm)} in memory rather than \eqn{O(n^2)},
+and every quantity the object reports is read off \eqn{L} without
+reconstructing anything: at n = 10,000 with 500 landmarks, 40 MB instead of
+760.
+
+\eqn{W} is singular as soon as two landmarks fall in the same leaves in
+every tree, so \eqn{\Lambda^{-1}} is a pseudo-inverse with the eigenvalues
+below \code{tol} discarded, not \code{solve()}. The number of directions dropped is
+reported by \code{summary()}.
+}
+
+\section{Two invariants that do not survive}{
+
+\code{?proximity} promises a symmetric matrix with a unit diagonal, and this is
+not one, which is why a \code{proximity_nystrom} is its own class rather than a
+\code{proximity}. \eqn{\tilde{P}_{ii} = \sum_k L_{ik}^2}, which equals one only
+when observation \eqn{i} is a landmark. The mean departure is reported by
+\code{summary()} and is the cheapest single measure of what the approximation
+cost.
+
+The approximation is also exact only in the span of the landmarks. With
+\code{landmarks} at least \code{n} the sampling is the whole sample, \eqn{C = W = P},
+and \eqn{L L^{\top}} returns \eqn{P} to machine precision.
+}
+
+\section{What it gives up, and where}{
+
+The entries move much more than the geometry does, and the geometry is what
+the object is for. Relative error against the exact matrix on data with two
+informative predictors out of six, forests of 300 trees:
+
+\tabular{lrrrr}{
+\tab \strong{m = 25} \tab \strong{50} \tab \strong{100}
+\tab \strong{200} \cr
+entries, n = 400 \tab 0.558 \tab 0.433 \tab 0.320 \tab 0.207 \cr
+configuration, n = 400 \tab 0.437 \tab 0.270 \tab 0.140 \tab 0.049 \cr
+entries, n = 800 \tab 0.660 \tab 0.532 \tab 0.419 \tab 0.315 \cr
+configuration, n = 800 \tab 0.529 \tab 0.343 \tab 0.196 \tab 0.102
+}
+
+At n = 400 with half the rows as landmarks the entries are 21 per cent out
+and the configuration \code{\link[=embedding]{embedding()}} recovers is 5 per cent out, a factor of
+four. Read the
+object through \code{embedding()} and \code{protest()}, which is what the class is
+shaped for, and treat \code{as.matrix()} as a diagnostic rather than a result.
+
+On data where the response is independent of every predictor the same table
+runs from 0.87 to 0.46: there is no low-rank structure to find, and no
+number of landmarks invents one.
+}
+
+\section{What stratifying the landmarks is worth}{
+
+Less than it sounds, and only where it was designed to help. On a response
+whose minority class is 2.4 per cent of the sample, against a simple sample
+of the same size:
+
+\tabular{lrrr}{
+\tab \strong{m = 20} \tab \strong{40} \tab \strong{80} \cr
+draws in which a simple sample drew no minority landmark \tab 0.625
+\tab 0.250 \tab 0.125 \cr
+error on the minority rows, simple \tab 0.384 \tab 0.344 \tab 0.304 \cr
+error on the minority rows, stratified \tab 0.367 \tab 0.342 \tab 0.302 \cr
+draws in which stratified was the better \tab 0.800 \tab 0.575 \tab 0.500
+}
+
+At twenty landmarks a simple sample misses the class outright in five draws
+out of eight and the rows of that class are reconstructed 4 per cent worse;
+by
+eighty landmarks it draws some anyway and the two are indistinguishable. The
+error over the whole matrix barely moves in either case, because the
+minority is a fortieth of the rows and contributes a fortieth of the norm.
+So \code{strata} is worth setting when the landmark budget is small relative to
+how rare the class is, and is not worth reaching for otherwise.
+}
+
+\section{In-bag only, and why}{
+
+There is no \code{type} argument. The out-of-bag proximity is \code{NA} on pairs never
+jointly out of bag and is indefinite where it is defined, so \eqn{W} has
+holes in it and negative eigenvalues, and \eqn{\Lambda^{-1/2}} does not
+exist. Repairing the landmark block with \code{\link[=make_psd]{make_psd()}} would make the
+arithmetic run, at the price of an approximation to a matrix that is no
+longer the one the user asked about. The restriction is deliberate.
+}
+
+\examples{
+\dontshow{if (requireNamespace("randomForest", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+set.seed(1)
+rf <- randomForest::randomForest(Species ~ ., data = iris, ntree = 200)
+nystrom(rf, iris, landmarks = 30, strata = iris$Species)
+\dontshow{\}) # examplesIf}
+}
+\seealso{
+\code{\link[=embedding]{embedding()}} for the configuration the object exists to produce,
+\code{\link[=as.matrix.proximity_nystrom]{as.matrix.proximity_nystrom()}} to reconstruct the matrix it avoided.
 }

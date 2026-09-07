@@ -37,7 +37,6 @@
 #' @noRd
 proximity_from_nodes <- function(nodes, inbag = NULL) {
   nodes <- as.matrix(nodes)
-  storage.mode(nodes) <- "integer"
   n <- nrow(nodes)
   B <- ncol(nodes)
 
@@ -45,6 +44,42 @@ proximity_from_nodes <- function(nodes, inbag = NULL) {
     inbag <- as.matrix(inbag)
     stopifnot(nrow(inbag) == n, ncol(inbag) == B)
   }
+
+  if (is.null(inbag)) {
+    Z <- leaf_indicator(nodes)
+    P <- as.matrix(Matrix::tcrossprod(Z)) / B
+  } else {
+    oob <- inbag == 0L
+    Z <- leaf_indicator(nodes, mask = oob)
+    num <- as.matrix(Matrix::tcrossprod(Z))
+    den <- tcrossprod(matrix(as.numeric(oob), nrow = n, ncol = B))
+    P <- num / den
+    P[den == 0] <- NA_real_
+  }
+
+  diag(P) <- 1
+  dimnames(P) <- NULL
+  P
+}
+
+#' The sparse leaf-membership indicator of an ensemble
+#'
+#' Row \eqn{i} of \eqn{Z} has a one in the column of every leaf that
+#' observation \eqn{i} reaches, across all \eqn{B} trees. Every proximity in
+#' the package is a cross-product of this matrix, whether over all pairs
+#' (`proximity_from_nodes()`) or against a handful of landmark columns
+#' (`nystrom()`), so it is built in one place.
+#'
+#' @param nodes Integer matrix, `n` by `B`, of terminal node identifiers.
+#' @param mask Optional logical matrix of the same shape. Entries that are
+#'   `FALSE` are left out of the indicator, which is how the out-of-bag
+#'   restriction is applied.
+#' @return A sparse `n` by `L` matrix, `L` the total number of leaves.
+#' @noRd
+leaf_indicator <- function(nodes, mask = NULL) {
+  storage.mode(nodes) <- "integer"
+  n <- nrow(nodes)
+  B <- ncol(nodes)
 
   # Engines disagree on how they label leaves: randomForest counts from one,
   # ranger returns the node index of a tree whose internal nodes are numbered
@@ -59,24 +94,13 @@ proximity_from_nodes <- function(nodes, inbag = NULL) {
   cols <- as.integer(nodes) + rep(offsets[seq_len(B)], each = n)
   n_leaves <- offsets[B + 1L]
 
-  if (is.null(inbag)) {
-    Z <- Matrix::sparseMatrix(i = rows, j = cols, x = 1, dims = c(n, n_leaves))
-    P <- as.matrix(Matrix::tcrossprod(Z)) / B
-  } else {
-    oob <- inbag == 0L
-    keep <- as.vector(oob)
-    Z <- Matrix::sparseMatrix(
-      i = rows[keep], j = cols[keep], x = 1, dims = c(n, n_leaves)
-    )
-    num <- as.matrix(Matrix::tcrossprod(Z))
-    den <- tcrossprod(matrix(as.numeric(oob), nrow = n, ncol = B))
-    P <- num / den
-    P[den == 0] <- NA_real_
+  if (!is.null(mask)) {
+    keep <- as.vector(mask)
+    rows <- rows[keep]
+    cols <- cols[keep]
   }
 
-  diag(P) <- 1
-  dimnames(P) <- NULL
-  P
+  Matrix::sparseMatrix(i = rows, j = cols, x = 1, dims = c(n, n_leaves))
 }
 
 #' Reference implementation of the leaf co-occurrence engine

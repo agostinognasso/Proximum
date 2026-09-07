@@ -2,6 +2,91 @@
 
 ## New
 
+* `nystrom()` is implemented: the approximation
+  `P ~ P[, m] P[m, m]^-1 P[m, ]` from `m` landmark observations, stored in
+  factored form as an `n` by `r` matrix so that the `n` by `n` object is never
+  built, on the way in or on the way out. At n = 10,000 with 500 landmarks that
+  is 40 MB instead of 760. The landmark block is inverted through a
+  pseudo-inverse with a rank cut rather than `solve()`, because it is singular
+  as soon as two landmarks reach the same leaves in every tree.
+* The entries of the approximation move much more than the geometry does, and
+  the geometry is what the object is for. Measured over 40 replicates per cell
+  in `inst/simulations/scalability-stability.R`, at n = 400 with 200 landmarks
+  the relative Frobenius error of the entries was 0.207 while the configuration
+  `embedding()` returns was 0.049 out, a factor of four. At n = 800 with 200
+  landmarks, 0.315 against 0.102. On data whose response is independent of
+  every predictor the same figures run from 0.87 to 0.46: there is no low-rank
+  structure to find and no number of landmarks invents one.
+* Stratifying the landmark sample is worth less than it sounds. On a minority
+  class holding 2.4 per cent of the sample, a simple sample of twenty landmarks
+  drew none of it in 62.5 per cent of draws and reconstructed those rows 4 per
+  cent worse than a stratified sample did, winning in 80 per cent of draws. By
+  eighty landmarks the two were indistinguishable, and the error over the whole
+  matrix barely moved in either case. `strata` earns its place at small
+  landmark budgets and rare classes, and nowhere else.
+* `sparsify()` is implemented, returning an object of class `proximity_sparse`
+  rather than a `proximity`. The class is separate for two reasons, both
+  measured. Attaching the S3 class to a `Matrix` object succeeds and destroys
+  its S4 class along with every method defined on it, so the sparse matrix has
+  to live in a slot rather than carry the class. And the saving does not
+  survive being used: across every sample size tried, `sqrt(1 - P)` had between
+  99.5 and 99.9 per cent of its entries non-zero and its doubly centred form
+  had 100 per cent, exactly. Every inference function refuses a
+  `proximity_sparse` and names the reason.
+* The documentation of `sparsify()` used to say that most pairs never share a
+  leaf and that the thresholded matrix is typically very sparse. Measured on
+  forests of 500 trees, the exact zeros are 14.3 per cent of pairs at n = 200
+  and 58.5 per cent at n = 1600 in-bag. The claim was wrong at the sizes users
+  work at and is replaced by the table.
+* `embedding()` is new, and exported: the classical scaling configuration of a
+  proximity, with a method that reads it off a Nystrom factor at `O(n r^2)`
+  instead of `O(n^3)`. Classical scaling of `sqrt(1 - P)` and the principal
+  components of `P` read as a kernel are the same computation whenever the
+  diagonal is one, which is the identity the factored method rests on.
+  `protest()` now goes through it and accepts a `proximity_nystrom` directly;
+  its agreement with `vegan::protest()` on `r` and `m^2` to seven decimals is
+  unchanged by the refactor.
+* `stability()` is implemented. Its documented description said it refits the
+  ensemble while its signature only ever received a list of already-computed
+  replicates; the signature won, and the description was rewritten. The word
+  bootstrap went with it: the `R(R-1)/2` pairwise agreements are dependent,
+  since every replicate enters `R-1` of them, so the reported interval is the
+  percentile interval of those agreements and is not a sampling distribution of
+  anything.
+* The two agreement statistics do not measure the same thing, by enough that
+  the choice matters. Over 20 replications of four replicates each at n = 300:
+  on forests refitted from the same ensemble, 0.978 for Mantel and 0.991 for
+  the centred kernel alignment; on forests fitted to different predictors with
+  the same response, 0.043 and 0.959; on forests with nothing in common at all,
+  0.000 and 0.670. The alignment has a floor near two thirds and cannot
+  separate replicates of one ensemble from forests that share only a response.
+  `"mantel"` is the default and the recommendation is in `?stability`.
+* `n_trees_required()` is implemented, and both its criterion and its default
+  changed because the documented ones could not be met. `CV(B) = 0.01` with
+  `max_trees = 2000` needs on the order of fifty thousand trees. The criterion
+  is now the mean between-replicate standard deviation over pairs divided by
+  the mean proximity, rather than a coefficient of variation formed pair by
+  pair: 8.2 per cent of pairs are zero in every replicate at every block size
+  measured, so the per-pair form is zero over zero and the answer would depend
+  on which pairs were discarded.
+* The default `eps` is 0.15, which is the tightest value tried that was reached
+  in all eight cells of four generating processes by two engines, at a median
+  of 300 trees. It is measured rather than chosen. The level of the criterion
+  depends on the data far more than on the ensemble: a factor of six between
+  the cleanest process and pure noise at every block size, and almost nothing
+  between `randomForest` and `ranger` on the same data.
+* `CV(B)` falls as a power of `B`, and the exponent is not one half. Fitted
+  across the eight cells the slope was between -0.55 and -0.60, mean -0.56,
+  with an `R^2` of at least 0.98 everywhere. The projection reported when no
+  block size reaches the target fits that slope rather than assuming it;
+  assuming one half would overstate the requirement by half again over one
+  decade.
+* Replicates for `n_trees_required()` come from disjoint blocks of the fitted
+  ensemble's terminal node matrix, not from refitting. Against four real
+  refits, four blocks of one 400-tree forest gave a median coefficient of
+  variation of 0.4576 against 0.4574, so the cheaper route measures the same
+  thing at the cost of one fit instead of a grid of them.
+
 * `mantel_test()` is implemented: the correlation between the off-diagonal
   entries of two proximity matrices, Pearson or Spearman, against a null built
   by permuting the rows and columns of one of them together. Partial Mantel is
@@ -78,6 +163,21 @@
   proximity is not a kernel, so centered kernel alignment, the RV coefficient
   and kernel PCA all need this first. The correction is recorded on the object
   and shown by `print()`.
+
+## Fixed
+
+* `as_dissimilarity()`, `make_psd()` and `double_centre()` reached the new
+  storage classes by coercion or by dispatch and would have densified them
+  without saying so. All three now refuse, through the same guard the inference
+  functions use.
+* The error `proximity()` raises on an unknown argument said that `sparsify()`
+  and `nystrom()` were scheduled for a later release. They are in this one, and
+  the message now points at them.
+* The check that a `ranger` forest was kept at fitting time was duplicated
+  between `proximity.ranger()` and the node extractor. It lives in the
+  extractor, which is the only place that needs it and the one `nystrom()` and
+  `n_trees_required()` also go through.
+* The coverage floor in CI is 95 per cent, from 90. The package is at 96.4.
 
 ## Correctness
 

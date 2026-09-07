@@ -30,7 +30,7 @@ jobs:
           # The floor, not the target. Raise it when the package clears the next
           # whole number and stays there; lowering it needs a reason in the
           # commit message.
-          COVERAGE_FLOOR: 90
+          COVERAGE_FLOOR: 95
         run: |
           cov <- covr::package_coverage(
             quiet = FALSE,

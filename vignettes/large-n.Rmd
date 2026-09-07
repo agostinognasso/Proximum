@@ -8,11 +8,10 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+run <- requireNamespace("randomForest", quietly = TRUE)
+knitr::opts_chunk$set(eval = run, purl = run)
 ```
-
-> **Status.** The scalability layer is scheduled for phase F3. This vignette
-> states the problem and fixes the interface.
 
 A proximity matrix is $n \times n$. At $n = 10^4$ that is 800 MB in double
 precision; at $n = 10^5$ it is 80 GB. The ensemble happily fits data at both
@@ -20,40 +19,152 @@ sizes, so the matrix, not the model, is what makes the method unusable. This is
 not a hypothetical: it is the wall the `e2tree` work hit on the Fannie Mae and
 HMDA data.
 
-Three ways round it, in increasing order of how much they give up.
+Two ways round it are implemented, and they give up different things. A third
+is not, and is described at the end for what it is.
 
-## Sparsity
+```{r setup}
+library(Proximum)
+library(randomForest)
 
-Most pairs never share a leaf, so most entries are exactly zero. Thresholding
-and storing the result as a sparse matrix is lossless for every pair above the
-threshold.
+set.seed(1)
+n <- 600
+X <- data.frame(matrix(rnorm(n * 6), n, 6))
+y <- factor(ifelse(X$X1 + X$X2 + rnorm(n) > 0, "a", "b"))
+training <- cbind(X, y = y)
 
-```{r}
-px <- proximity(rf, newdata = df, sparse = TRUE, threshold = 0.05)
+forest <- randomForest(y ~ ., data = training, ntree = 500)
+px <- proximity(forest, newdata = training)
+format(object.size(px), units = "auto")
 ```
 
-## Landmarks and the Nystrom approximation
+## Sparsity: keep every value above a threshold
 
-Compute the proximity exactly on $m \ll n$ landmark observations, then extend it
-to the rest by projection:
+Thresholding and storing the result as a sparse matrix is lossless for every
+pair above the threshold and stores nothing for the pairs below it.
+
+```{r sparsify}
+sp <- sparsify(px, threshold = 0.05)
+sp
+```
+
+```{r sparsify-summary}
+summary(sp)
+```
+
+The saving is real. What it is not is durable:
+
+```{r sparsify-cost}
+c(
+  dense = format(object.size(px), units = "auto"),
+  sparse = format(object.size(sp), units = "auto")
+)
+```
+
+The result is a `proximity_sparse`, not a `proximity`, and no statistic in the
+package will take it:
+
+```{r sparsify-refusal, error = TRUE}
+mantel_test(sp, px, n_perm = 99)
+```
+
+That refusal is the point rather than an omission. Every statistic here runs on
+the induced dissimilarity or on the doubly centred matrix, and both are dense
+whatever the proximity was: $1 - P$ turns every stored zero into a one, and the
+Gower centring leaves no zero at all.
+
+```{r sparsify-densification}
+dissimilarity <- as_dissimilarity(px)
+c(
+  proximity = mean(as.matrix(px) != 0),
+  dissimilarity = mean(dissimilarity != 0),
+  centred = mean(double_centre(dissimilarity) != 0)
+)
+```
+
+So `sparsify()` is a storage format. Use it to hold a matrix between sessions
+or to hand it to something outside the package; `as.matrix()` spends the memory
+back when you want the statistics.
+
+## Landmarks: the Nystrom approximation
+
+Compute the proximity exactly against $m \ll n$ landmark observations, then
+extend it to the rest by projection:
 
 $$\tilde{P} = P_{n,m}\, P_{m,m}^{-1}\, P_{m,n}.$$
 
-Stratifying the landmark sample on the response keeps the rare class
-represented.
+Nothing of size $n \times n$ is ever formed, on the way in or on the way out.
 
-```{r}
-px_nys <- nystrom(rf, data = df, landmarks = 500, strata = df$y)
+```{r nystrom}
+approximation <- nystrom(forest, training, landmarks = 60, strata = training$y)
+approximation
 ```
 
-## Never materialising the matrix
+Stratifying the landmark sample on the response is what keeps a rare class
+represented, and it is the argument to reach for when one class is small.
 
-When the quantity of interest is a scalar, a Mantel correlation or a CKA, the
-matrix can be traversed in blocks and discarded. The statistic is accumulated in
-a streaming fashion and the full $n \times n$ object is never allocated.
+```{r nystrom-summary}
+summary(approximation)
+```
 
-```{r}
-mantel_test(rf1, rf2, data = df, streaming = TRUE)
+`diagonal error` is the price. The approximation has $\tilde{P}_{ii} \ne 1$,
+where an exact proximity has one, and that departure is the cheapest single
+measure of how much the landmarks failed to span the sample. It falls as the
+landmarks are added:
+
+```{r nystrom-landmarks}
+sapply(c(20, 60, 180), function(m) {
+  summary(nystrom(forest, training, landmarks = m))$diagonal_error
+})
+```
+
+### What the approximation is for
+
+Unlike the sparse form, this one survives being used, because the question it
+answers is the geometric one. The configuration comes out of the stored factor
+at $O(nr^2)$ instead of $O(n^3)$, and `protest()` takes the object directly:
+
+```{r nystrom-embedding}
+coordinates <- embedding(approximation, k = 2)
+dim(coordinates)
+
+protest(approximation, px, n_perm = 199)
+```
+
+The pairwise statistics still refuse it, for the same reason as before: there
+is no matrix to correlate entry by entry without building one.
+
+```{r nystrom-refusal, error = TRUE}
+cka(approximation, px)
+```
+
+## How many trees, and how much does the answer move?
+
+Neither of the above helps if the matrix is unstable, and the number of trees
+that settles it is a question with an answer.
+
+```{r n-trees}
+required <- n_trees_required(forest, training, eps = 0.2)
+required
+attr(required, "path")
+```
+
+The criterion falls as a power of the block size, so a target set too low is
+not reached by any ensemble you would fit. When that happens the result is `NA`
+and the projection says what it would take:
+
+```{r n-trees-unreachable}
+unreachable <- n_trees_required(forest, training, eps = 0.01)
+c(answer = unreachable, projected_trees = attr(unreachable, "projected"))
+```
+
+`stability()` asks the same question of replicates you already hold, and makes
+no assumption about where they came from:
+
+```{r stability}
+replicates <- lapply(1:4, function(i) {
+  proximity(randomForest(y ~ ., data = training, ntree = 250), newdata = training)
+})
+stability(replicates)
 ```
 
 ## Choosing between them
@@ -61,5 +172,14 @@ mantel_test(rf1, rf2, data = df, streaming = TRUE)
 | $n$ | Strategy | Cost |
 |---|---|---|
 | $\le 5{,}000$ | Dense, exact | Nothing given up |
-| $5{,}000$–$50{,}000$ | Sparse, exact above threshold | Small proximities lost |
-| $> 50{,}000$ | Nystrom, or streaming statistics | Rank-$m$ approximation |
+| $5{,}000$ to $50{,}000$ | Sparse for storage, dense for the statistics | Small proximities lost, memory spent again on use |
+| $> 50{,}000$ | Nystrom, for the geometry | Rank-$m$ approximation, no pairwise statistics |
+
+## Not implemented: streaming statistics
+
+When the quantity of interest is a scalar, a Mantel correlation or a CKA, the
+matrix could in principle be traversed in blocks and discarded, with the
+statistic accumulated as it goes and the full $n \times n$ object never
+allocated. `mantel_test()` has no `streaming` argument and this paragraph is
+the whole of the feature. It is written down here so that the shape of it is
+fixed before anything is built, not to suggest that anything has been.

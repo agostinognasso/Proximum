@@ -68,6 +68,7 @@ make_psd <- function(px,
                      rescale = TRUE,
                      tol = 1e-8) {
   method <- match.arg(method)
+  reject_lossy_storage(px, "px")
   P <- as.matrix(unclass(px))
 
   if (anyNA(P)) {

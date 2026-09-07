@@ -182,13 +182,8 @@ test_that("summary skips the eigen decomposition above max_eigen", {
 })
 
 test_that("not-yet-implemented entry points fail loudly", {
-  # Phase F2 has landed whole: `mantel_test()`, `cka()`, `rv_coefficient()`,
-  # `permanova()` and `protest()` are tested in their own files. What remains
-  # of the roadmap still has to say so rather than return something plausible.
-  expect_error(nystrom(1, 2), "not implemented yet")
-  expect_error(sparsify(1), "not implemented yet")
-  expect_error(stability(list()), "not implemented yet")
-  expect_error(n_trees_required(1, 2), "not implemented yet")
+  # Phases F2 and F3 have landed whole. What remains of the roadmap still has
+  # to say so rather than return something plausible.
   expect_error(autoplot(structure(matrix(1), class = "proximity")),
                "not implemented yet")
 })

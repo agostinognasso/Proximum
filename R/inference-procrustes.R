@@ -74,26 +74,21 @@ protest <- function(px1, px2, k = 2L, n_perm = 999,
   transform <- match.arg(transform)
   data_name <- paste(deparse(substitute(px1)), "and", deparse(substitute(px2)))
 
-  m1 <- as_square_matrix(px1, "px1")
-  m2 <- as_square_matrix(px2, "px2")
-  check_conformable(m1, m2, "px1", "px2")
-  check_defined(m1, "px1")
-  check_defined(m2, "px2")
   n_perm <- check_n_perm(n_perm)
 
-  k <- suppressWarnings(as.integer(k))
-  if (length(k) != 1L || is.na(k) || k < 1L) {
-    stop("`k` must be at least one dimension: a configuration of none is a ",
-         "single point, and every point lies on every other.", call. = FALSE)
-  }
-  if (k >= nrow(m1)) {
-    stop("`k` is ", k, " and there are ", nrow(m1), " observations. Classical ",
-         "scaling of `n` points spans at most `n - 1` dimensions.",
-         call. = FALSE)
+  # The observation count is read before anything is scaled, so that a Nystrom
+  # approximation can be compared without being reconstructed.
+  n1 <- n_observations(px1, "px1")
+  n2 <- n_observations(px2, "px2")
+  if (n1 != n2) {
+    stop("`px1` has ", n1, " observations and `px2` has ", n2,
+         ". A comparison between two proximity matrices is only defined when ",
+         "they were computed on the same rows.", call. = FALSE)
   }
 
-  x <- configuration(m1, k, transform, "px1")
-  y <- configuration(m2, k, transform, "px2")
+  x <- embedding(px1, k = k, transform = transform, arg = "px1")
+  y <- embedding(px2, k = k, transform = transform, arg = "px2")
+  k <- ncol(x)
   statistic <- procrustes_r(x, y)
 
   entry <- capture_seed()
@@ -118,33 +113,6 @@ protest <- function(px1, px2, k = 2L, n_perm = 999,
   # the number worth reporting is how many dimensions the fit was made in.
   names(out$parameter) <- c("dimensions", "permutations")
   out
-}
-
-#' The classical scaling configuration of a proximity matrix
-#'
-#' @param m A square matrix of proximities.
-#' @param k Dimensions to retain.
-#' @param transform The dissimilarity transform.
-#' @param arg The argument name, for the error message.
-#' @return An `n` by `k` matrix of coordinates.
-#' @noRd
-configuration <- function(m, k, transform, arg) {
-  gower <- double_centre(as_dissimilarity(m, transform))
-  gower <- (gower + t(gower)) / 2
-  spectrum <- eigen(gower, symmetric = TRUE)
-  positive <- sum(spectrum$values > max(abs(spectrum$values)) * 1e-8)
-  if (positive < k) {
-    stop("The classical scaling of `", arg, "` has ", positive,
-         " positive eigenvalue", if (positive == 1L) "" else "s",
-         ", fewer than the ", k, " dimension", if (k == 1L) "" else "s",
-         " asked for. A dissimilarity with too few of them has no ",
-         "configuration of that size to superimpose: an out-of-bag proximity ",
-         "is indefinite and `make_psd()` repairs it, while a matrix whose ",
-         "entries barely vary has no geometry to recover at all.",
-         call. = FALSE)
-  }
-  spectrum$vectors[, seq_len(k), drop = FALSE] %*%
-    diag(sqrt(spectrum$values[seq_len(k)]), nrow = k)
 }
 
 #' The symmetric Procrustes correlation between two configurations

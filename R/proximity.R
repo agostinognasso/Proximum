@@ -104,7 +104,7 @@ proximity.randomForest <- function(object,
     inbag <- object$inbag
   }
 
-  nodes <- attr(stats::predict(object, newdata = newdata, nodes = TRUE), "nodes")
+  nodes <- terminal_nodes(object, newdata)
   P <- proximity_from_nodes(nodes, inbag = inbag)
   dimnames(P) <- list(rownames(newdata), rownames(newdata))
 
@@ -132,13 +132,6 @@ proximity.ranger <- function(object, newdata = NULL, type = c("inbag", "oob"), .
   type <- match.arg(type)
   reject_unused(..., what = "proximity")
 
-  if (is.null(object$forest)) {
-    stop(
-      "The forest was discarded at fitting time. Refit with ",
-      "`write.forest = TRUE` so that terminal nodes can be recovered.",
-      call. = FALSE
-    )
-  }
   if (is.null(newdata)) {
     stop(
       "`newdata` is required: a ranger fit does not store its training data. ",
@@ -165,7 +158,7 @@ proximity.ranger <- function(object, newdata = NULL, type = c("inbag", "oob"), .
     }
   }
 
-  nodes <- stats::predict(object, data = newdata, type = "terminalNodes")$predictions
+  nodes <- terminal_nodes(object, newdata)
   P <- proximity_from_nodes(nodes, inbag = inbag)
   dimnames(P) <- list(rownames(newdata), rownames(newdata))
 
@@ -230,10 +223,58 @@ reject_unused <- function(..., what) {
     "`", what, "()` does not have ",
     if (length(named)) paste0("an argument called `", paste(named, collapse = "`, `"), "`") else
       paste0(unnamed, " argument", if (unnamed > 1L) "s" else "", " to take here"),
-    ". Proximities are computed densely; `sparsify()` and `nystrom()` are ",
-    "scheduled for a later release and are not reachable through `proximity()`.",
+    ". Proximities are computed densely, and neither storage form is reachable ",
+    "through `proximity()`: pass the result to `sparsify()`, or build the ",
+    "approximation with `nystrom()`.",
     call. = FALSE
   )
+}
+
+#' The terminal nodes an ensemble sends each observation to
+#'
+#' The one thing every engine is asked for, and the one place their differing
+#' spellings of it are written down. `nystrom()` and `n_trees_required()` need
+#' the node matrix without needing a proximity, so the extraction lives apart
+#' from the statistic computed on it.
+#'
+#' A branch rather than a generic: it is internal, so nothing outside the
+#' package could add a method to it anyway, and `ensemble_size()` below reads
+#' the same two classes the same way.
+#'
+#' @param fit A fitted tree ensemble.
+#' @param data The data to push through it.
+#' @return An integer matrix, `n` observations by `B` trees.
+#' @noRd
+terminal_nodes <- function(fit, data) {
+  if (inherits(fit, "randomForest")) {
+    return(attr(stats::predict(fit, newdata = data, nodes = TRUE), "nodes"))
+  }
+  if (inherits(fit, "ranger")) {
+    if (is.null(fit$forest)) {
+      stop(
+        "The forest was discarded at fitting time. Refit with ",
+        "`write.forest = TRUE` so that terminal nodes can be recovered.",
+        call. = FALSE
+      )
+    }
+    return(stats::predict(fit, data = data, type = "terminalNodes")$predictions)
+  }
+  stop(
+    "No method for an object of class ", class(fit)[1], ". Proximities can be ",
+    "extracted from forests fitted with `randomForest::randomForest()` or ",
+    "`ranger::ranger()`.",
+    call. = FALSE
+  )
+}
+
+#' How many trees the ensemble carries
+#'
+#' @param fit A fitted tree ensemble.
+#' @return A single integer.
+#' @noRd
+ensemble_size <- function(fit) {
+  n <- if (inherits(fit, "randomForest")) fit$ntree else fit$num.trees
+  as.integer(n)
 }
 
 #' Construct a proximity object

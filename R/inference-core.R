@@ -15,6 +15,7 @@
 #' @return A numeric matrix without the `proximity` class or its attributes.
 #' @noRd
 as_square_matrix <- function(x, arg) {
+  reject_lossy_storage(x, arg)
   m <- as.matrix(unclass(x))
   attributes(m) <- attributes(m)[c("dim", "dimnames")]
   if (!is.numeric(m)) {
@@ -30,6 +31,61 @@ as_square_matrix <- function(x, arg) {
          call. = FALSE)
   }
   m
+}
+
+#' Refuse the storage forms that would be densified behind the user's back
+#'
+#' `sparsify()` and `nystrom()` exist to keep the \eqn{n \times n} matrix from
+#' being allocated. Every statistic in this package runs on the induced
+#' dissimilarity or on the doubly centred matrix, and both are dense whatever
+#' the proximity was: \eqn{1 - P} turns every stored zero into a one, and the
+#' Gower centring leaves no zero at all. Accepting either object here would
+#' allocate the matrix it was built to avoid, silently, and the user would have
+#' paid for the saving and not received it.
+#'
+#' @param x The argument as the user supplied it.
+#' @param arg Its name, for the error message.
+#' @return `NULL`, invisibly. Called for the error.
+#' @noRd
+reject_lossy_storage <- function(x, arg) {
+  if (inherits(x, "proximity_sparse")) {
+    stop(
+      "`", arg, "` holds a sparse proximity. The statistics in this package ",
+      "run on the induced dissimilarity or on the doubly centred matrix, and ",
+      "both are dense whatever the proximity was, so the thresholding would ",
+      "be undone inside this call and paid for nothing. Pass `as.matrix()` of ",
+      "it to say that this is what you want.",
+      call. = FALSE
+    )
+  }
+  if (inherits(x, "proximity_nystrom")) {
+    stop(
+      "`", arg, "` holds a Nystrom approximation, which is stored as a factor ",
+      "and has no matrix to compare entry by entry. Reconstructing it here ",
+      "would allocate the ", format(x$n), " by ", format(x$n), " object the ",
+      "approximation exists to avoid. `embedding()` and `protest()` work on ",
+      "the factored form; `as.matrix()` reconstructs it deliberately.",
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
+}
+
+#' How many observations an object describes, without materialising it
+#'
+#' Read before anything is scaled, so that a mismatch costs an error rather
+#' than two eigendecompositions. It validates nothing else: the argument goes
+#' through `as_square_matrix()` on its own path straight afterwards.
+#'
+#' @param px A proximity in any of its storage forms.
+#' @param arg Its name, kept for symmetry with the checks around it.
+#' @return A single integer.
+#' @noRd
+n_observations <- function(px, arg) {
+  if (inherits(px, c("proximity_nystrom", "proximity_sparse"))) {
+    return(px$n)
+  }
+  NROW(px)
 }
 
 #' Check that two matrices describe the same observations

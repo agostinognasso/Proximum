@@ -4,26 +4,99 @@
 \alias{n_trees_required}
 \title{How many trees does a stable proximity matrix need?}
 \usage{
-n_trees_required(fit, data, eps = 0.01, max_trees = 2000L)
+n_trees_required(fit, data, eps = 0.15, max_trees = 2000L)
 }
 \arguments{
 \item{fit}{A fitted tree ensemble.}
 
 \item{data}{The data on which proximities are computed.}
 
-\item{eps}{Target coefficient of variation.}
+\item{eps}{Target coefficient of variation. See the section below: the
+default is measured rather than chosen, and the value that suits a given
+dataset may be some way from it.}
 
-\item{max_trees}{Upper bound on the number of trees to try.}
+\item{max_trees}{Upper bound on the block size to try. The real ceiling is
+half the trees \code{fit} carries, since a block size needs two blocks.}
 }
 \value{
-An integer: the smallest \code{B} meeting the criterion, with the
-search path returned as an attribute.
+The smallest \code{B} on the grid meeting the criterion, as an integer,
+or \code{NA_integer_} when none does. The attribute \code{path} holds the grid, the
+number of replicates at each point and the coefficient of variation there;
+\code{projected} holds the extrapolated requirement.
 }
 \description{
-Grows the ensemble and stops when the coefficient of variation of the
-proximity entries across replicates falls below \code{eps}:
-\deqn{CV(B) = \widehat{sd}[P^{(B)}] / \widehat{mean}[P^{(B)}] < \epsilon.}
+Grows the ensemble in blocks and stops when the entries of the proximity
+matrix stop moving between them.
 }
-\details{
-Not implemented yet: scheduled for phase F3.
+\section{The criterion}{
+
+With \eqn{R} replicates of an ensemble of \eqn{B} trees, the coefficient of
+variation reported is
+\deqn{CV(B) = \frac{\overline{sd_r(P^{(r)}_{ij})}}{\overline{P_{ij}}},}
+the mean over pairs of the standard deviation between replicates, divided by
+the mean of all the off-diagonal proximities. Both averages run over pairs
+only: the diagonal is one in every replicate and would deflate the numerator
+and inflate the denominator.
+
+The alternative, a coefficient of variation formed pair by pair and then
+averaged, is not used. Around eight per cent of pairs have a proximity of
+exactly zero in every replicate, at every number of trees measured, so their
+own coefficient of variation is zero over zero; the figure would then depend
+on which pairs were discarded. The aggregate form has one denominator and no
+such pairs.
+}
+
+\section{What to expect of \code{eps}}{
+
+\eqn{CV(B)} falls as a power of the block size. Over four generating
+processes and both engines, a straight line through the measured points on
+the log scale had a slope between -0.55 and -0.60, mean -0.56, with
+\eqn{R^2} of at least 0.98 in every cell. It is a clean power law and its
+exponent is not one half, which is why the projection below fits the slope
+rather than assuming it.
+
+The level, unlike the exponent, depends on the data far more than on the
+ensemble. Measured at n = 300 on forests of 2,000 trees:
+
+\tabular{lrrrr}{
+\strong{data} \tab \strong{B = 25} \tab \strong{100} \tab \strong{400}
+\tab \strong{1000} \cr
+one clean split \tab 0.149 \tab 0.074 \tab 0.037 \tab 0.017 \cr
+two noisy predictors \tab 0.549 \tab 0.271 \tab 0.130 \tab 0.070 \cr
+an unbalanced response \tab 0.345 \tab 0.171 \tab 0.083 \tab 0.044 \cr
+a response independent of everything \tab 0.893 \tab 0.443 \tab 0.211
+\tab 0.113
+}
+
+A factor of six between the easiest row and the hardest, at every block
+size, and almost nothing between \code{randomForest} and \code{ranger} on the same
+row. So \code{eps} is a target for the data in hand rather than a universal
+constant. The default of 0.15 is the tightest of the values tried that was
+reached in all eight cells, at a median of 300 trees; 0.10 was reached in
+six of them, failing on the process where the response is independent of
+every predictor and the proximity is sampling noise all the way down.
+
+When no \code{B} on the grid reaches \code{eps} the result is \code{NA} and the \code{projected}
+attribute says how many trees the fitted line extrapolates to, which is the
+number worth acting on.
+}
+
+\section{In-bag only}{
+
+The proximity of each block is the in-bag one. Out-of-bag would leave a
+different set of pairs undefined in every block, so the standard deviation
+between replicates would be taken over a set that changes with the
+replicate, and the criterion would measure that as well as the instability.
+}
+
+\examples{
+\dontshow{if (requireNamespace("randomForest", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+set.seed(1)
+rf <- randomForest::randomForest(Species ~ ., data = iris, ntree = 400)
+n_trees_required(rf, iris, eps = 0.2)
+\dontshow{\}) # examplesIf}
+}
+\seealso{
+\code{\link[=stability]{stability()}} for the agreement between replicates that are already
+in hand.
 }
