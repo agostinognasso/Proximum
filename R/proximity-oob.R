@@ -23,8 +23,8 @@
 #' positive semi-definite matrices need not be positive semi-definite, which is
 #' the reason the out-of-bag proximity is not a kernel.
 #'
-#' Pairs whose denominator is zero — the two observations were never
-#' simultaneously out-of-bag — are `NA` rather than `0`. Returning `0` would
+#' Pairs whose denominator is zero, meaning the two observations were never
+#' simultaneously out-of-bag, are `NA` rather than `0`. Returning `0` would
 #' silently assert that the two observations are maximally dissimilar, which is
 #' exactly the opposite of "we have no evidence".
 #'

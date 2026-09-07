@@ -1,5 +1,7 @@
 ---
-output: github_document
+output:
+  github_document:
+    md_extensions: -smart
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file. -->
@@ -16,6 +18,9 @@ knitr::opts_chunk$set(
 # Proximum
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/agostinognasso/Proximum/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/agostinognasso/Proximum/actions/workflows/R-CMD-check.yaml)
+[![test-coverage](https://github.com/agostinognasso/Proximum/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/agostinognasso/Proximum/actions/workflows/test-coverage.yaml)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
 The proximity matrix of a tree ensemble records how often two observations fall
@@ -27,9 +32,10 @@ all when `n` is large.
 `Proximum` treats the proximity matrix as a first-class statistical object
 rather than as a by-product of the model: one extractor across engines, in-bag
 and out-of-bag definitions, the transformations and metric diagnostics that go
-with them, and permutation inference for comparing two matrices. Stability
-diagnostics, scalable approximations and the plots are planned; the functions
-that will provide them are documented and raise an error naming their release.
+with them, and permutation inference for comparing two matrices or partitioning
+one. Stability diagnostics, scalable approximations and the plots are planned;
+the functions that will provide them are documented and raise an error naming
+their release.
 
 It is the methodological layer underneath
 [`e2tree`](https://cran.r-project.org/package=e2tree), which reconstructs a
@@ -37,11 +43,11 @@ forest's behaviour from exactly this similarity structure.
 
 ## Installation
 
-Not on CRAN yet.
+Not on CRAN yet. Install from GitHub:
 
 ```r
 # install.packages("pak")
-pak::pak("Proximum")
+pak::pak("agostinognasso/Proximum")
 ```
 
 ## Usage
@@ -59,34 +65,44 @@ summary(px)
 ```
 
 Switching to `type = "oob"` removes the optimistic bias of the in-bag
-definition, at the cost of positive semi-definiteness — the out-of-bag
+definition, at the cost of positive semi-definiteness: the out-of-bag
 proximity is not a kernel, and `summary()` says so. See
 `vignette("Proximum-intro")`.
 
 ## Status
 
 Early development. Extraction from `randomForest` and `ranger`, the
-dissimilarity transforms, the Euclidean diagnostics and the positive
-semi-definite repair all work; the inference, stability and scalability layers
-are declared, documented and not yet implemented — calling them raises an error
-that says which phase they belong to.
+dissimilarity transforms, the Euclidean diagnostics, the positive semi-definite
+repair and the whole inference layer all work. The stability and scalability
+layers and the plots are declared, documented and not yet implemented, and
+calling one of those functions raises an error that says which phase it belongs
+to.
+
+Every number quoted in the documentation comes from a script in
+`inst/simulations/`, and those are meant to be re-run rather than believed.
 
 | Phase | Content | State |
 |---|---|---|
 | F1 | `randomForest` and `ranger`, `proximity` object, transforms, `make_psd()` | mostly done |
-| F2 | Mantel, PERMANOVA, Procrustes, CKA | declared |
+| F2 | `mantel_test()`, `cka()`, `rv_coefficient()`, `permanova()`, `protest()` | done |
 | F3 | Sparsity, Nystrom, stability, `n_trees_required()` | declared |
 | F4 | `autoplot()`, vignettes, pkgdown | declared |
-| F5 | CRAN, JSS paper | — |
+| F5 | CRAN, JSS paper | not started |
 
 The proximity is computed as a sparse Gram matrix, `P = Z Z'/B` with `Z` the
 leaf indicator, rather than by looping over trees. On 300 trees and 1500
-observations that is 0.16 s instead of 13 s — and the same identity is why the
+observations that is 0.16 s instead of 13 s, and the same identity is why the
 in-bag proximity is positive semi-definite while the out-of-bag one, an
 elementwise quotient of two Gram matrices, is not.
 
 ## Related work
 
-* [`e2tree`](https://cran.r-project.org/package=e2tree) — explains a forest with
+* [`e2tree`](https://cran.r-project.org/package=e2tree): explains a forest with
   a single tree, built on the same similarity structure.
-* `rankimp` — which variables drive the representation `Proximum` describes.
+* [`rankimp`](https://github.com/agostinognasso/rankimp): which variables drive
+  the representation `Proximum` describes.
+* [`vegan`](https://cran.r-project.org/package=vegan): the reference
+  implementation of Mantel, PERMANOVA and Procrustes on ordinary
+  dissimilarities. It cannot consume a matrix with undefined pairs, which is
+  why this package implements them natively and uses `vegan` only in its
+  tests, to check that the two agree where both apply.

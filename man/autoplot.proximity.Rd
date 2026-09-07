@@ -21,13 +21,13 @@ Four views of the same object:
 }
 \details{
 \itemize{
-\item \code{"heatmap"} — the matrix, with rows and columns seriated so that the
+\item \code{"heatmap"}: the matrix, with rows and columns seriated so that the
 block structure the ensemble has learned becomes visible.
-\item \code{"mds"} — a classical multidimensional scaling of the induced
+\item \code{"mds"}: a classical multidimensional scaling of the induced
 dissimilarity, coloured by class and by out-of-bag error.
-\item \code{"network"} — the thresholded proximity as a graph, with communities
+\item \code{"network"}: the thresholded proximity as a graph, with communities
 read as the implicit clusters of the forest.
-\item \code{"stability"} — the agreement between replicates as a function of the
+\item \code{"stability"}: the agreement between replicates as a function of the
 number of trees, with a bootstrap band.
 }
 

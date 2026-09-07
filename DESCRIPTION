@@ -12,12 +12,15 @@ Description: Treats the proximity matrices produced by tree ensembles as
     Provides a unified extractor across ensemble engines, in-bag and
     out-of-bag definitions, transformations to dissimilarities with metric
     diagnostics, corrections that make an indefinite proximity usable as a
-    kernel, and permutation inference for comparing two proximity matrices.
+    kernel, and permutation inference for comparing two proximity matrices
+    or partitioning one across the terms of a design.
     Bootstrap stability assessment, approximations for large samples and
     dedicated visualisations are planned and not yet implemented; the
     functions that will provide them raise an error naming the release they
     are scheduled for.
 License: MIT + file LICENSE
+URL: https://github.com/agostinognasso/Proximum
+BugReports: https://github.com/agostinognasso/Proximum/issues
 Depends:
     R (>= 3.5)
 Imports:

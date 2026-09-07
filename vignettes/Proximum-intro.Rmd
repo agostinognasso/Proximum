@@ -42,7 +42,7 @@ px
 
 A warning about the matrix `randomForest` hands back on its own. Its signature
 reads `oob.prox = proximity`, so a forest fitted with `proximity = TRUE` and
-nothing else stores the **out-of-bag** matrix, not the in-bag one — and the fit
+nothing else stores the **out-of-bag** matrix, not the in-bag one, and the fit
 records nothing that says which. `Proximum` recovers the flag from the call and
 refuses to relabel the matrix behind your back:
 
@@ -56,7 +56,7 @@ proximity(rf_stored) # asks for in-bag; the forest has out-of-bag
 ## Diagnostics
 
 `summary()` reports what the matrix looks like and whether the dissimilarity it
-induces can be embedded in a Euclidean space — the condition under which
+induces can be embedded in a Euclidean space, the condition under which
 classical multidimensional scaling of the proximity is exact rather than
 approximate.
 
@@ -143,8 +143,8 @@ summary(px_oob)$euclidean
 This matters downstream. Classical multidimensional scaling of the out-of-bag
 dissimilarity has negative eigenvalues, so its low-dimensional configuration is
 an approximation of something that has no exact Euclidean representation, and
-any method that assumes a kernel — including centered kernel alignment — needs
-an explicit correction first. Choose `type = "oob"` for an unbiased estimate of
+any method that assumes a kernel, centered kernel alignment included, needs an
+explicit correction first. Choose `type = "oob"` for an unbiased estimate of
 the proximities themselves, and `type = "inbag"` when you need the geometry.
 
 When you need both, `make_psd()` projects the out-of-bag matrix onto the cone of
@@ -190,7 +190,7 @@ plot(mds, col = iris$Species, pch = 19, xlab = "", ylab = "",
 
 ## What comes next
 
-The inference layer — comparing two proximity matrices with a Mantel test,
-partitioning their variation with PERMANOVA, aligning them with CKA — is the
+The inference layer, which compares two proximity matrices with a Mantel test,
+partitions their variation with PERMANOVA and aligns them with CKA, is the
 subject of `vignette("comparing-forests")`. Scaling past a few thousand
 observations is the subject of `vignette("large-n")`.

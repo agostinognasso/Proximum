@@ -16,9 +16,9 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 
 A proximity matrix is $n \times n$. At $n = 10^4$ that is 800 MB in double
 precision; at $n = 10^5$ it is 80 GB. The ensemble happily fits data at both
-sizes, so the matrix, not the model, is what makes the method unusable — and
-this is not a hypothetical, it is the wall the `e2tree` work hit on the Fannie
-Mae and HMDA data.
+sizes, so the matrix, not the model, is what makes the method unusable. This is
+not a hypothetical: it is the wall the `e2tree` work hit on the Fannie Mae and
+HMDA data.
 
 Three ways round it, in increasing order of how much they give up.
 
@@ -48,7 +48,7 @@ px_nys <- nystrom(rf, data = df, landmarks = 500, strata = df$y)
 
 ## Never materialising the matrix
 
-When the quantity of interest is a scalar — a Mantel correlation, a CKA — the
+When the quantity of interest is a scalar, a Mantel correlation or a CKA, the
 matrix can be traversed in blocks and discarded. The statistic is accumulated in
 a streaming fashion and the full $n \times n$ object is never allocated.
 

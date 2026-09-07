@@ -55,7 +55,7 @@ test_that("leaf identifiers are not confused across trees", {
 
   # Here observation 1 is in leaf 1 of tree 1 and leaf 2 of tree 2, while
   # observation 2 is in leaf 2 of tree 1 and leaf 1 of tree 2. They never share
-  # a leaf, so the proximity is 0 — unless the leaf labels of the two trees are
+  # a leaf, so the proximity is 0, unless the leaf labels of the two trees are
   # pooled, in which case a naive count sees two "matches".
   nodes <- matrix(c(1L, 2L, 2L, 1L), nrow = 2L)
   expect_equal(proximity_from_nodes(nodes)[1, 2], 0)

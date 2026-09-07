@@ -2,8 +2,8 @@
 #'
 #' The out-of-bag proximity is not positive semi-definite (see
 #' [summary.proximity()]), so it is not a kernel, and every method that assumes
-#' one — centered kernel alignment, the RV coefficient, kernel PCA, classical
-#' multidimensional scaling with an exact embedding — is applied to it at the
+#' one (centered kernel alignment, the RV coefficient, kernel PCA, classical
+#' multidimensional scaling with an exact embedding) is applied to it at the
 #' user's peril. `make_psd()` projects it onto the cone of positive
 #' semi-definite matrices first, and records how.
 #'
