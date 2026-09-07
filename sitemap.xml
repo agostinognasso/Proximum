@@ -12,10 +12,13 @@
 <url><loc>/news/index.html</loc></url>
 <url><loc>/reference/Proximum-package.html</loc></url>
 <url><loc>/reference/as.dist.proximity.html</loc></url>
+<url><loc>/reference/as.matrix.proximity_nystrom.html</loc></url>
+<url><loc>/reference/as.matrix.proximity_sparse.html</loc></url>
 <url><loc>/reference/as_dissimilarity.html</loc></url>
 <url><loc>/reference/autoplot.proximity.html</loc></url>
 <url><loc>/reference/cka.html</loc></url>
 <url><loc>/reference/double_centre.html</loc></url>
+<url><loc>/reference/embedding.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
 <url><loc>/reference/is_euclidean.html</loc></url>
 <url><loc>/reference/make_psd.html</loc></url>
@@ -29,5 +32,7 @@
 <url><loc>/reference/sparsify.html</loc></url>
 <url><loc>/reference/stability.html</loc></url>
 <url><loc>/reference/summary.proximity.html</loc></url>
+<url><loc>/reference/summary.proximity_nystrom.html</loc></url>
+<url><loc>/reference/summary.proximity_sparse.html</loc></url>
 </urlset>
 

@@ -10,10 +10,11 @@ proximity needs, or to compute the thing at all when `n` is large.
 object rather than as a by-product of the model: one extractor across
 engines, in-bag and out-of-bag definitions, the transformations and
 metric diagnostics that go with them, and permutation inference for
-comparing two matrices or partitioning one. Stability diagnostics,
-scalable approximations and the plots are planned; the functions that
-will provide them are documented and raise an error naming their
-release.
+comparing two matrices or partitioning one. It also holds a Nystrom
+approximation and a thresholded sparse form for samples too large to
+keep the matrix, and measures how far the proximity moves between
+replicates of the ensemble. The plots are planned; the function that
+will provide them is documented and raises an error naming its release.
 
 It is the methodological layer underneath
 [`e2tree`](https://cran.r-project.org/package=e2tree), which
@@ -64,10 +65,13 @@ proximity is not a kernel, and
 
 Early development. Extraction from `randomForest` and `ranger`, the
 dissimilarity transforms, the Euclidean diagnostics, the positive
-semi-definite repair and the whole inference layer all work. The
-stability and scalability layers and the plots are declared, documented
-and not yet implemented, and calling one of those functions raises an
-error that says which phase it belongs to.
+semi-definite repair, the inference layer, and the scalability and
+stability layers all work. The plots are declared, documented and not
+yet implemented, and calling
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+raises an error that says which phase it belongs to. So does the
+`streaming` argument that [`vignette("large-n")`](articles/large-n.md)
+describes and nothing provides.
 
 Every number quoted in the documentation comes from a script in
 `inst/simulations/`, and those are meant to be re-run rather than
@@ -77,7 +81,7 @@ believed.
 |----|----|----|
 | F1 | `randomForest` and `ranger`, `proximity` object, transforms, [`make_psd()`](reference/make_psd.md) | mostly done |
 | F2 | [`mantel_test()`](reference/mantel_test.md), [`cka()`](reference/cka.md), [`rv_coefficient()`](reference/cka.md), [`permanova()`](reference/permanova.md), [`protest()`](reference/protest.md) | done |
-| F3 | Sparsity, Nystrom, stability, [`n_trees_required()`](reference/n_trees_required.md) | declared |
+| F3 | [`sparsify()`](reference/sparsify.md), [`nystrom()`](reference/nystrom.md), [`embedding()`](reference/embedding.md), [`stability()`](reference/stability.md), [`n_trees_required()`](reference/n_trees_required.md) | done |
 | F4 | [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html), vignettes, pkgdown | declared |
 | F5 | CRAN, JSS paper | not started |
 
@@ -86,6 +90,9 @@ the leaf indicator, rather than by looping over trees. On 300 trees and
 1500 observations that is 0.16 s instead of 13 s, and the same identity
 is why the in-bag proximity is positive semi-definite while the
 out-of-bag one, an elementwise quotient of two Gram matrices, is not.
+The same `Z` is what [`nystrom()`](reference/nystrom.md) multiplies
+against its landmark columns, which is how the approximation avoids the
+`n` by `n` matrix on the way in as well as on the way out.
 
 ## Related work
 

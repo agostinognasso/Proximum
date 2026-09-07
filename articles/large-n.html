@@ -68,10 +68,6 @@
 
     
     
-<blockquote>
-<p><strong>Status.</strong> The scalability layer is scheduled for phase
-F3. This vignette states the problem and fixes the interface.</p>
-</blockquote>
 <p>A proximity matrix is
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">n \times n</annotation></semantics></math>.
 At
@@ -82,39 +78,207 @@ it is 80 GB. The ensemble happily fits data at both sizes, so the
 matrix, not the model, is what makes the method unusable. This is not a
 hypothetical: it is the wall the <code>e2tree</code> work hit on the
 Fannie Mae and HMDA data.</p>
-<p>Three ways round it, in increasing order of how much they give
-up.</p>
-<div class="section level2">
-<h2 id="sparsity">Sparsity<a class="anchor" aria-label="anchor" href="#sparsity"></a>
-</h2>
-<p>Most pairs never share a leaf, so most entries are exactly zero.
-Thresholding and storing the result as a sparse matrix is lossless for
-every pair above the threshold.</p>
+<p>Two ways round it are implemented, and they give up different things.
+A third is not, and is described at the end for what it is.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">px</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">rf</span>, newdata <span class="op">=</span> <span class="va">df</span>, sparse <span class="op">=</span> <span class="cn">TRUE</span>, threshold <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/agostinognasso/Proximum" class="external-link">Proximum</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.stat.berkeley.edu/~breiman/RandomForests/" class="external-link">randomForest</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; randomForest 4.7-1.2</span></span>
+<span><span class="co">#&gt; Type rfNews() to see new features/changes/bug fixes.</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">600</span></span>
+<span><span class="va">X</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="fl">6</span><span class="op">)</span>, <span class="va">n</span>, <span class="fl">6</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">X</span><span class="op">$</span><span class="va">X1</span> <span class="op">+</span> <span class="va">X</span><span class="op">$</span><span class="va">X2</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span>, <span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">training</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">X</span>, y <span class="op">=</span> <span class="va">y</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">forest</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">training</span>, ntree <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span>
+<span><span class="va">px</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">forest</span>, newdata <span class="op">=</span> <span class="va">training</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size</a></span><span class="op">(</span><span class="va">px</span><span class="op">)</span>, units <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "2.8 Mb"</span></span></code></pre></div>
+<div class="section level2">
+<h2 id="sparsity-keep-every-value-above-a-threshold">Sparsity: keep every value above a threshold<a class="anchor" aria-label="anchor" href="#sparsity-keep-every-value-above-a-threshold"></a>
+</h2>
+<p>Thresholding and storing the result as a sparse matrix is lossless
+for every pair above the threshold and stores nothing for the pairs
+below it.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sparsify.html">sparsify</a></span><span class="op">(</span><span class="va">px</span>, threshold <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span>
+<span><span class="va">sp</span></span>
+<span><span class="co">#&gt; &lt;proximity_sparse&gt; 600 x 600 </span></span>
+<span><span class="co">#&gt;   engine   : randomForest </span></span>
+<span><span class="co">#&gt;   trees    : 500 </span></span>
+<span><span class="co">#&gt;   type     : inbag </span></span>
+<span><span class="co">#&gt;   threshold: 0.05 </span></span>
+<span><span class="co">#&gt;   stored   : 20.4% of entries</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">sp</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;proximity_sparse&gt; summary</span></span>
+<span><span class="co">#&gt;   observations : 600 </span></span>
+<span><span class="co">#&gt;   engine       : randomForest ( 500 trees )</span></span>
+<span><span class="co">#&gt;   type         : inbag </span></span>
+<span><span class="co">#&gt;   threshold    : 0.05 </span></span>
+<span><span class="co">#&gt;   stored       : 73452 entries, 20.4% of the matrix</span></span>
+<span><span class="co">#&gt;   pairs kept   : 36426 </span></span>
+<span><span class="co">#&gt;   stored values:</span></span>
+<span><span class="co">#&gt;    0%   25%   50%   75%  100% </span></span>
+<span><span class="co">#&gt; 0.052 0.080 0.130 0.220 0.864</span></span></code></pre></div>
+<p>The saving is real. What it is not is durable:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  dense <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size</a></span><span class="op">(</span><span class="va">px</span><span class="op">)</span>, units <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span>,</span>
+<span>  sparse <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/format.html" class="external-link">format</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size</a></span><span class="op">(</span><span class="va">sp</span><span class="op">)</span>, units <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;      dense     sparse </span></span>
+<span><span class="co">#&gt;   "2.8 Mb" "514.4 Kb"</span></span></code></pre></div>
+<p>The result is a <code>proximity_sparse</code>, not a
+<code>proximity</code>, and no statistic in the package will take
+it:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/mantel_test.html">mantel_test</a></span><span class="op">(</span><span class="va">sp</span>, <span class="va">px</span>, n_perm <span class="op">=</span> <span class="fl">99</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> `px1` holds a sparse proximity. The statistics in this package run on the induced dissimilarity or on the doubly centred matrix, and both are dense whatever the proximity was, so the thresholding would be undone inside this call and paid for nothing. Pass `as.matrix()` of it to say that this is what you want.</span></span></code></pre></div>
+<p>That refusal is the point rather than an omission. Every statistic
+here runs on the induced dissimilarity or on the doubly centred matrix,
+and both are dense whatever the proximity was:
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>−</mo><mi>P</mi></mrow><annotation encoding="application/x-tex">1 - P</annotation></semantics></math>
+turns every stored zero into a one, and the Gower centring leaves no
+zero at all.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">dissimilarity</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_dissimilarity.html">as_dissimilarity</a></span><span class="op">(</span><span class="va">px</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  proximity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">px</span><span class="op">)</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  dissimilarity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">dissimilarity</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  centred <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="../reference/double_centre.html">double_centre</a></span><span class="op">(</span><span class="va">dissimilarity</span><span class="op">)</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt;     proximity dissimilarity       centred </span></span>
+<span><span class="co">#&gt;     0.6238278     0.9983333     1.0000000</span></span></code></pre></div>
+<p>So <code><a href="../reference/sparsify.html">sparsify()</a></code> is a storage format. Use it to hold a
+matrix between sessions or to hand it to something outside the package;
+<code><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix()</a></code> spends the memory back when you want the
+statistics.</p>
 </div>
 <div class="section level2">
-<h2 id="landmarks-and-the-nystrom-approximation">Landmarks and the Nystrom approximation<a class="anchor" aria-label="anchor" href="#landmarks-and-the-nystrom-approximation"></a>
+<h2 id="landmarks-the-nystrom-approximation">Landmarks: the Nystrom approximation<a class="anchor" aria-label="anchor" href="#landmarks-the-nystrom-approximation"></a>
 </h2>
-<p>Compute the proximity exactly on
+<p>Compute the proximity exactly against
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>m</mi><mo>≪</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">m \ll n</annotation></semantics></math>
 landmark observations, then extend it to the rest by projection:</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>P</mi><mo accent="true">̃</mo></mover><mo>=</mo><msub><mi>P</mi><mrow><mi>n</mi><mo>,</mo><mi>m</mi></mrow></msub><mspace width="0.167em"></mspace><msubsup><mi>P</mi><mrow><mi>m</mi><mo>,</mo><mi>m</mi></mrow><mrow><mi>−</mi><mn>1</mn></mrow></msubsup><mspace width="0.167em"></mspace><msub><mi>P</mi><mrow><mi>m</mi><mo>,</mo><mi>n</mi></mrow></msub><mi>.</mi></mrow><annotation encoding="application/x-tex">\tilde{P} = P_{n,m}\, P_{m,m}^{-1}\, P_{m,n}.</annotation></semantics></math></p>
-<p>Stratifying the landmark sample on the response keeps the rare class
-represented.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">px_nys</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/nystrom.html">nystrom</a></span><span class="op">(</span><span class="va">rf</span>, data <span class="op">=</span> <span class="va">df</span>, landmarks <span class="op">=</span> <span class="fl">500</span>, strata <span class="op">=</span> <span class="va">df</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span></code></pre></div>
+<p>Nothing of size
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">n \times n</annotation></semantics></math>
+is ever formed, on the way in or on the way out.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">approximation</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/nystrom.html">nystrom</a></span><span class="op">(</span><span class="va">forest</span>, <span class="va">training</span>, landmarks <span class="op">=</span> <span class="fl">60</span>, strata <span class="op">=</span> <span class="va">training</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span>
+<span><span class="va">approximation</span></span>
+<span><span class="co">#&gt; &lt;proximity_nystrom&gt; 600 x 600 </span></span>
+<span><span class="co">#&gt;   engine   : randomForest </span></span>
+<span><span class="co">#&gt;   trees    : 500 </span></span>
+<span><span class="co">#&gt;   type     : inbag </span></span>
+<span><span class="co">#&gt;   landmarks: 60 of 600 </span></span>
+<span><span class="co">#&gt;   rank     : 60  </span></span>
+<span><span class="co">#&gt;   stored   : 281.5 Kb against 2.7 Mb dense</span></span></code></pre></div>
+<p>Stratifying the landmark sample on the response is what keeps a rare
+class represented, and it is the argument to reach for when one class is
+small.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">approximation</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;proximity_nystrom&gt; summary</span></span>
+<span><span class="co">#&gt;   observations   : 600 </span></span>
+<span><span class="co">#&gt;   engine         : randomForest ( 500 trees )</span></span>
+<span><span class="co">#&gt;   landmarks      : 60 of 600 </span></span>
+<span><span class="co">#&gt;   rank           : 60 ( 0 dropped at tol 1e-08 )</span></span>
+<span><span class="co">#&gt;   off-diagonal   : mean 0.03356  sd 0.06818 </span></span>
+<span><span class="co">#&gt;   diagonal error : 0.707 (exact would be 0)</span></span>
+<span><span class="co">#&gt;   memory         : 281.5 Kb against 2.7 Mb dense</span></span></code></pre></div>
+<p><code>diagonal error</code> is the price. The approximation has
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>P</mi><mo accent="true">̃</mo></mover><mrow><mi>i</mi><mi>i</mi></mrow></msub><mo>≠</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\tilde{P}_{ii} \ne 1</annotation></semantics></math>,
+where an exact proximity has one, and that departure is the cheapest
+single measure of how much the landmarks failed to span the sample. It
+falls as the landmarks are added:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">60</span>, <span class="fl">180</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">m</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="fu"><a href="../reference/nystrom.html">nystrom</a></span><span class="op">(</span><span class="va">forest</span>, <span class="va">training</span>, landmarks <span class="op">=</span> <span class="va">m</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">diagonal_error</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 0.8440053 0.7174950 0.4666236</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="what-the-approximation-is-for">What the approximation is for<a class="anchor" aria-label="anchor" href="#what-the-approximation-is-for"></a>
+</h3>
+<p>Unlike the sparse form, this one survives being used, because the
+question it answers is the geometric one. The configuration comes out of
+the stored factor at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><msup><mi>r</mi><mn>2</mn></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">O(nr^2)</annotation></semantics></math>
+instead of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false" form="prefix">(</mo><msup><mi>n</mi><mn>3</mn></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">O(n^3)</annotation></semantics></math>,
+and <code><a href="../reference/protest.html">protest()</a></code> takes the object directly:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">coordinates</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/embedding.html">embedding</a></span><span class="op">(</span><span class="va">approximation</span>, k <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">coordinates</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 600   2</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/protest.html">protest</a></span><span class="op">(</span><span class="va">approximation</span>, <span class="va">px</span>, n_perm <span class="op">=</span> <span class="fl">199</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  Procrustes correlation (PROTEST, 2 dimensions, 199 permutations)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; data:  approximation and px</span></span>
+<span><span class="co">#&gt; r = 0.98183, dimensions = 2, permutations = 199, p-value = 0.005</span></span>
+<span><span class="co">#&gt; alternative hypothesis: greater</span></span></code></pre></div>
+<p>The pairwise statistics still refuse it, for the same reason as
+before: there is no matrix to correlate entry by entry without building
+one.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/cka.html">cka</a></span><span class="op">(</span><span class="va">approximation</span>, <span class="va">px</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> `px1` holds a Nystrom approximation, which is stored as a factor and has no matrix to compare entry by entry. Reconstructing it here would allocate the 600 by 600 object the approximation exists to avoid. `embedding()` and `protest()` work on the factored form; `as.matrix()` reconstructs it deliberately.</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
-<h2 id="never-materialising-the-matrix">Never materialising the matrix<a class="anchor" aria-label="anchor" href="#never-materialising-the-matrix"></a>
+<h2 id="how-many-trees-and-how-much-does-the-answer-move">How many trees, and how much does the answer move?<a class="anchor" aria-label="anchor" href="#how-many-trees-and-how-much-does-the-answer-move"></a>
 </h2>
-<p>When the quantity of interest is a scalar, a Mantel correlation or a
-CKA, the matrix can be traversed in blocks and discarded. The statistic
-is accumulated in a streaming fashion and the full
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">n \times n</annotation></semantics></math>
-object is never allocated.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/mantel_test.html">mantel_test</a></span><span class="op">(</span><span class="va">rf1</span>, <span class="va">rf2</span>, data <span class="op">=</span> <span class="va">df</span>, streaming <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>Neither of the above helps if the matrix is unstable, and the number
+of trees that settles it is a question with an answer.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">required</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/n_trees_required.html">n_trees_required</a></span><span class="op">(</span><span class="va">forest</span>, <span class="va">training</span>, eps <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span>
+<span><span class="va">required</span></span>
+<span><span class="co">#&gt; [1] 200</span></span>
+<span><span class="co">#&gt; attr(,"path")</span></span>
+<span><span class="co">#&gt;   trees replicates        cv</span></span>
+<span><span class="co">#&gt; 1    25         20 0.5580558</span></span>
+<span><span class="co">#&gt; 2    50         10 0.3885353</span></span>
+<span><span class="co">#&gt; 3   100          5 0.2672441</span></span>
+<span><span class="co">#&gt; 4   200          2 0.1501387</span></span>
+<span><span class="co">#&gt; attr(,"projected")</span></span>
+<span><span class="co">#&gt; [1] NA</span></span>
+<span><span class="co">#&gt; attr(,"eps")</span></span>
+<span><span class="co">#&gt; [1] 0.2</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">required</span>, <span class="st">"path"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   trees replicates        cv</span></span>
+<span><span class="co">#&gt; 1    25         20 0.5580558</span></span>
+<span><span class="co">#&gt; 2    50         10 0.3885353</span></span>
+<span><span class="co">#&gt; 3   100          5 0.2672441</span></span>
+<span><span class="co">#&gt; 4   200          2 0.1501387</span></span></code></pre></div>
+<p>The criterion falls as a power of the block size, so a target set too
+low is not reached by any ensemble you would fit. When that happens the
+result is <code>NA</code> and the projection says what it would
+take:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">unreachable</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/n_trees_required.html">n_trees_required</a></span><span class="op">(</span><span class="va">forest</span>, <span class="va">training</span>, eps <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>answer <span class="op">=</span> <span class="va">unreachable</span>, projected_trees <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">unreachable</span>, <span class="st">"projected"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;          answer projected_trees </span></span>
+<span><span class="co">#&gt;              NA           20129</span></span></code></pre></div>
+<p><code><a href="../reference/stability.html">stability()</a></code> asks the same question of replicates you
+already hold, and makes no assumption about where they came from:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">replicates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">training</span>, ntree <span class="op">=</span> <span class="fl">250</span><span class="op">)</span>, newdata <span class="op">=</span> <span class="va">training</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/stability.html">stability</a></span><span class="op">(</span><span class="va">replicates</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;proximity_stability&gt;</span></span>
+<span><span class="co">#&gt;   replicates : 4 on 600 observations</span></span>
+<span><span class="co">#&gt;   statistic  : mantel </span></span>
+<span><span class="co">#&gt;   comparisons: 6 pairs of replicates</span></span>
+<span><span class="co">#&gt;   median     : 0.9827 </span></span>
+<span><span class="co">#&gt;   95% percentile interval: 0.9811 to 0.9843</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="choosing-between-them">Choosing between them<a class="anchor" aria-label="anchor" href="#choosing-between-them"></a>
@@ -138,19 +302,33 @@ object is never allocated.</p>
 </tr>
 <tr class="even">
 <td>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>5</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">5{,}000</annotation></semantics></math>–<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>50</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">50{,}000</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>5</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">5{,}000</annotation></semantics></math>
+to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>50</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">50{,}000</annotation></semantics></math>
 </td>
-<td>Sparse, exact above threshold</td>
-<td>Small proximities lost</td>
+<td>Sparse for storage, dense for the statistics</td>
+<td>Small proximities lost, memory spent again on use</td>
 </tr>
 <tr class="odd">
 <td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>&gt;</mo><mn>50</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">&gt; 50{,}000</annotation></semantics></math></td>
-<td>Nystrom, or streaming statistics</td>
+<td>Nystrom, for the geometry</td>
 <td>Rank-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>m</mi><annotation encoding="application/x-tex">m</annotation></semantics></math>
-approximation</td>
+approximation, no pairwise statistics</td>
 </tr>
 </tbody>
 </table>
+</div>
+<div class="section level2">
+<h2 id="not-implemented-streaming-statistics">Not implemented: streaming statistics<a class="anchor" aria-label="anchor" href="#not-implemented-streaming-statistics"></a>
+</h2>
+<p>When the quantity of interest is a scalar, a Mantel correlation or a
+CKA, the matrix could in principle be traversed in blocks and discarded,
+with the statistic accumulated as it goes and the full
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">n \times n</annotation></semantics></math>
+object never allocated. <code><a href="../reference/mantel_test.html">mantel_test()</a></code> has no
+<code>streaming</code> argument and this paragraph is the whole of the
+feature. It is written down here so that the shape of it is fixed before
+anything is built, not to suggest that anything has been.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
