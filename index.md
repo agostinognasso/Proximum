@@ -65,13 +65,11 @@ proximity is not a kernel, and
 
 Early development. Extraction from `randomForest` and `ranger`, the
 dissimilarity transforms, the Euclidean diagnostics, the positive
-semi-definite repair, the inference layer, and the scalability and
-stability layers all work. The plots are declared, documented and not
-yet implemented, and calling
-[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
-raises an error that says which phase it belongs to. So does the
-`streaming` argument that [`vignette("large-n")`](articles/large-n.md)
-describes and nothing provides.
+semi-definite repair, the inference layer, the scalability and stability
+layers, and the plots all work. What is still declared and not provided
+is the `streaming` argument that
+[`vignette("large-n")`](articles/large-n.md) describes, and the `loans`
+data the credit scoring case study is written against.
 
 Every number quoted in the documentation comes from a script in
 `inst/simulations/`, and those are meant to be re-run rather than
@@ -82,7 +80,7 @@ believed.
 | F1 | `randomForest` and `ranger`, `proximity` object, transforms, [`make_psd()`](reference/make_psd.md) | mostly done |
 | F2 | [`mantel_test()`](reference/mantel_test.md), [`cka()`](reference/cka.md), [`rv_coefficient()`](reference/cka.md), [`permanova()`](reference/permanova.md), [`protest()`](reference/protest.md) | done |
 | F3 | [`sparsify()`](reference/sparsify.md), [`nystrom()`](reference/nystrom.md), [`embedding()`](reference/embedding.md), [`stability()`](reference/stability.md), [`n_trees_required()`](reference/n_trees_required.md) | done |
-| F4 | [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html), vignettes, pkgdown | declared |
+| F4 | [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html), vignettes, pkgdown | done but pkgdown |
 | F5 | CRAN, JSS paper | not started |
 
 The proximity is computed as a sparse Gram matrix, `P = Z Z'/B` with `Z`

@@ -157,7 +157,7 @@ c(
   oob   = min(eigen(unclass(px_oob), symmetric = TRUE, only.values = TRUE)$values)
 )
 #>         inbag           oob 
-#> -9.601070e-15 -6.469597e-01
+#> -1.265658e-14 -6.469597e-01
 ```
 
 The in-bag minimum is zero up to rounding; the out-of-bag one is not
@@ -225,17 +225,56 @@ Because both engines produce the same object, “do two implementations of
 the same forest represent the data the same way?” becomes a question the
 inference layer can answer, rather than a question nobody can ask.
 
-## From proximity to dissimilarity
+## The views
+
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+draws the object three ways, and which of them answers a question
+depends on the question.
+
+The heatmap orders the rows and columns by a seriation of the induced
+dissimilarity, so that the groups the forest learned line up along the
+diagonal rather than being scattered by the order the rows happened to
+arrive in. The axis labels are dropped with the original ordering: after
+the seriation an index is a position, not an observation.
 
 ``` r
 
-d <- as.dist(px)
-mds <- cmdscale(d, k = 2)
-plot(mds, col = iris$Species, pch = 19, xlab = "", ylab = "",
-     main = "MDS of the forest proximity")
+autoplot(px, type = "heatmap")
 ```
 
 ![](Proximum-intro_files/figure-html/unnamed-chunk-12-1.png)
+
+The `"mds"` view is the configuration
+[`embedding()`](../reference/embedding.md) returns, which is the
+classical scaling of $`\sqrt{1 - P}`$: the same coordinates as
+`cmdscale(as.dist(px), k = 2)`, agreeing here to 9.3e-16 up to the sign
+of each axis. The colouring is yours to pass. A `proximity` object
+carries the engine, the number of trees and the definition used, and
+nothing about the response, so a plot that coloured by class on its own
+would be inventing the class.
+
+``` r
+
+autoplot(px, type = "mds", colour = iris$Species)
+```
+
+![](Proximum-intro_files/figure-html/unnamed-chunk-13-1.png)
+
+The `"network"` view keeps the pairs above a threshold and reads the
+communities off the graph they form. That clustering is the forest’s
+own, recovered from the proximity, rather than one imposed on the
+observations from outside:
+
+``` r
+
+autoplot(px, type = "network", threshold = 0.3)
+```
+
+![](Proximum-intro_files/figure-html/unnamed-chunk-14-1.png)
+
+The first and the last of these need `seriation` and `igraph`, which are
+suggested rather than required and are refused by name when absent. The
+`"mds"` view needs neither.
 
 ## What comes next
 

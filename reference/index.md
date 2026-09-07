@@ -10,8 +10,12 @@
   : Densify a sparse proximity matrix
 - [`as_dissimilarity()`](as_dissimilarity.md) : Transform a proximity
   into a dissimilarity
-- [`autoplot(`*`<proximity>`*`)`](autoplot.proximity.md) : Visualise a
-  proximity matrix
+- [`autoplot(`*`<proximity>`*`)`](autoplot.proximity.md)
+  [`autoplot(`*`<proximity_sparse>`*`)`](autoplot.proximity.md)
+  [`autoplot(`*`<proximity_nystrom>`*`)`](autoplot.proximity.md)
+  [`autoplot(`*`<proximity_stability>`*`)`](autoplot.proximity.md)
+  [`autoplot(`*`<proximity_trees>`*`)`](autoplot.proximity.md) :
+  Visualise a proximity object
 - [`cka()`](cka.md) [`rv_coefficient()`](cka.md) : Centered kernel
   alignment between two proximity matrices
 - [`double_centre()`](double_centre.md) : Double centring of a squared
@@ -23,8 +27,9 @@
 - [`make_psd()`](make_psd.md) : Repair an indefinite proximity matrix
 - [`mantel_test()`](mantel_test.md) : Mantel test between two proximity
   matrices
-- [`n_trees_required()`](n_trees_required.md) : How many trees does a
-  stable proximity matrix need?
+- [`n_trees_required()`](n_trees_required.md)
+  [`print(`*`<proximity_trees>`*`)`](n_trees_required.md) : How many
+  trees does a stable proximity matrix need?
 - [`nystrom()`](nystrom.md)
   [`print(`*`<proximity_nystrom>`*`)`](nystrom.md) : Nystrom
   approximation of a proximity matrix

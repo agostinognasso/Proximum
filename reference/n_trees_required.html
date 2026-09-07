@@ -49,7 +49,10 @@ matrix stop moving between them.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">n_trees_required</span><span class="op">(</span><span class="va">fit</span>, <span class="va">data</span>, eps <span class="op">=</span> <span class="fl">0.15</span>, max_trees <span class="op">=</span> <span class="fl">2000L</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">n_trees_required</span><span class="op">(</span><span class="va">fit</span>, <span class="va">data</span>, eps <span class="op">=</span> <span class="fl">0.15</span>, max_trees <span class="op">=</span> <span class="fl">2000L</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'proximity_trees'</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -74,6 +77,14 @@ dataset may be some way from it.</p></dd>
 <dd><p>Upper bound on the block size to try. The real ceiling is
 half the trees <code>fit</code> carries, since a block size needs two blocks.</p></dd>
 
+
+<dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
+<dd><p>A <code>proximity_trees</code> object.</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Unused.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -81,6 +92,10 @@ half the trees <code>fit</code> carries, since a block size needs two blocks.</p
 or <code>NA_integer_</code> when none does. The attribute <code>path</code> holds the grid, the
 number of replicates at each point and the coefficient of variation there;
 <code>projected</code> holds the extrapolated requirement.</p>
+<p>The integer carries the class <code>proximity_trees</code>, which buys it a
+<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> and an <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code> and costs it nothing: arithmetic on it
+returns the plain number, so <code>ntree = n_trees_required(...) + 100</code> is the
+integer it looks like.</p>
     </div>
     <div class="section level2">
     <h2 id="the-criterion">The criterion<a class="anchor" aria-label="anchor" href="#the-criterion"></a></h2>
@@ -143,14 +158,10 @@ in hand.</p></div>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">rf</span> <span class="op">&lt;-</span> <span class="fu">randomForest</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">iris</span>, ntree <span class="op">=</span> <span class="fl">400</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">n_trees_required</span><span class="op">(</span><span class="va">rf</span>, <span class="va">iris</span>, eps <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 25</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"path")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   trees replicates         cv</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    25         16 0.08369233</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"projected")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"eps")</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;proximity_trees&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   target  : CV below 0.2 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   searched: 25 to 25 trees per block, 1 block size </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   answer  : 25 trees per block, at CV 0.0837 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

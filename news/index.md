@@ -4,6 +4,72 @@
 
 ### New
 
+- [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  is implemented, and there are five methods rather than one. A
+  `proximity` object gets `"heatmap"`, `"mds"` and `"network"`; a
+  `proximity_sparse` gets the network at the threshold it was built
+  with; a `proximity_nystrom` gets its configuration, read off the
+  stored factor; and the two objects of the stability layer get the
+  views that were promised of the wrong object. Reaching for
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  on any class in the package now gives a picture rather than “no
+  applicable method”.
+
+- Two of the four views this page promised could not be drawn from the
+  object they were promised of. `type = "stability"` was to show the
+  agreement between replicates against the number of trees: a
+  `proximity` object has one number of trees and no replicates, so that
+  view is now
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  of a [`stability()`](../reference/stability.md) or an
+  [`n_trees_required()`](../reference/n_trees_required.md) result, which
+  are the objects that hold the numbers. Its bootstrap band went for the
+  reason it went from [`stability()`](../reference/stability.md), that
+  the pairwise agreements are dependent. And `type = "mds"` was to be
+  “coloured by class and by out-of-bag error”, neither of which the
+  object receives; `colour` is now the caller’s to fill, and a wrong
+  length is refused.
+
+- [`n_trees_required()`](../reference/n_trees_required.md) returns an
+  integer of class `proximity_trees`, which buys it a
+  [`print()`](https://rdrr.io/r/base/print.html) and the plot of its
+  search path. The class does not survive arithmetic: measured, R keeps
+  the attributes of the first operand, so without `Ops.proximity_trees`
+  the number `required + 100` would carry the `path` and `eps` of a
+  search that stopped at `required` and would print an answer that
+  search never gave.
+
+- [`n_trees_required()`](../reference/n_trees_required.md) documented an
+  integer and returned one only when the target was missed. `2L^k` is a
+  double in R however integer its operands, so the grid the answer is
+  taken off was a double vector and so was every answer read from it;
+  `NA_integer_` was the only integer it ever returned. `tree_grid()` now
+  builds the grid as integers.
+
+- `seriation` and `igraph` are suggested, not required. The heatmap
+  needs the first and the network the second, each refused by name when
+  absent; the other three views need neither. The refusal is tested with
+  the package masked rather than assumed absent, since both are
+  installed wherever this is developed.
+
+- Both randomised views put back the random stream they found, so
+  drawing a plot cannot move the permutation tests around it. The
+  network was the expected case, through its force-directed layout and
+  its community search. The heatmap was not: the seriation was written
+  up as deterministic and measured otherwise, because a proximity is
+  `k/B` and so takes at most `B + 1` distinct values however many pairs
+  it has. On the 150 irises of the example there are 197 distinct
+  dissimilarities across 11,175 pairs, the ordering breaks that many
+  ties at random, and it moves with the seed; on the same matrix with
+  the ties broken by a 1e-9 jitter it stops moving and draws nothing
+  from the stream at all.
+
+- `reject_unused()` now takes the advice at the end of its message from
+  the caller, and
+  [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+  uses it: `color` for `colour` would otherwise have drawn an uncoloured
+  plot and said nothing about why.
+
 - [`nystrom()`](../reference/nystrom.md) is implemented: the
   approximation `P ~ P[, m] P[m, m]^-1 P[m, ]` from `m` landmark
   observations, stored in factored form as an `n` by `r` matrix so that

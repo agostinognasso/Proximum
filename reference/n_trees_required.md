@@ -7,6 +7,9 @@ matrix stop moving between them.
 
 ``` r
 n_trees_required(fit, data, eps = 0.15, max_trees = 2000L)
+
+# S3 method for class 'proximity_trees'
+print(x, ...)
 ```
 
 ## Arguments
@@ -30,12 +33,26 @@ n_trees_required(fit, data, eps = 0.15, max_trees = 2000L)
   Upper bound on the block size to try. The real ceiling is half the
   trees `fit` carries, since a block size needs two blocks.
 
+- x:
+
+  A `proximity_trees` object.
+
+- ...:
+
+  Unused.
+
 ## Value
 
 The smallest `B` on the grid meeting the criterion, as an integer, or
 `NA_integer_` when none does. The attribute `path` holds the grid, the
 number of replicates at each point and the coefficient of variation
 there; `projected` holds the extrapolated requirement.
+
+The integer carries the class `proximity_trees`, which buys it a
+[`print()`](https://rdrr.io/r/base/print.html) and an
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+and costs it nothing: arithmetic on it returns the plain number, so
+`ntree = n_trees_required(...) + 100` is the integer it looks like.
 
 ## The criterion
 
@@ -106,12 +123,8 @@ are already in hand.
 set.seed(1)
 rf <- randomForest::randomForest(Species ~ ., data = iris, ntree = 400)
 n_trees_required(rf, iris, eps = 0.2)
-#> [1] 25
-#> attr(,"path")
-#>   trees replicates         cv
-#> 1    25         16 0.08369233
-#> attr(,"projected")
-#> [1] NA
-#> attr(,"eps")
-#> [1] 0.2
+#> <proximity_trees>
+#>   target  : CV below 0.2 
+#>   searched: 25 to 25 trees per block, 1 block size 
+#>   answer  : 25 trees per block, at CV 0.0837 
 ```

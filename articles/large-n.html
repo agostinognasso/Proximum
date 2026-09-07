@@ -240,45 +240,59 @@ of trees that settles it is a question with an answer.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">required</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/n_trees_required.html">n_trees_required</a></span><span class="op">(</span><span class="va">forest</span>, <span class="va">training</span>, eps <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span>
 <span><span class="va">required</span></span>
-<span><span class="co">#&gt; [1] 200</span></span>
-<span><span class="co">#&gt; attr(,"path")</span></span>
-<span><span class="co">#&gt;   trees replicates        cv</span></span>
-<span><span class="co">#&gt; 1    25         20 0.5580558</span></span>
-<span><span class="co">#&gt; 2    50         10 0.3885353</span></span>
-<span><span class="co">#&gt; 3   100          5 0.2672441</span></span>
-<span><span class="co">#&gt; 4   200          2 0.1501387</span></span>
-<span><span class="co">#&gt; attr(,"projected")</span></span>
-<span><span class="co">#&gt; [1] NA</span></span>
-<span><span class="co">#&gt; attr(,"eps")</span></span>
-<span><span class="co">#&gt; [1] 0.2</span></span>
+<span><span class="co">#&gt; &lt;proximity_trees&gt;</span></span>
+<span><span class="co">#&gt;   target  : CV below 0.2 </span></span>
+<span><span class="co">#&gt;   searched: 25 to 200 trees per block, 4 block sizes </span></span>
+<span><span class="co">#&gt;   answer  : 200 trees per block, at CV 0.15</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">required</span>, <span class="st">"path"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   trees replicates        cv</span></span>
 <span><span class="co">#&gt; 1    25         20 0.5580558</span></span>
 <span><span class="co">#&gt; 2    50         10 0.3885353</span></span>
 <span><span class="co">#&gt; 3   100          5 0.2672441</span></span>
 <span><span class="co">#&gt; 4   200          2 0.1501387</span></span></code></pre></div>
+<p><code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code> draws the search it recorded: the criterion
+against the block size on log axes, with the target, the answer, and the
+power law fitted through the measured points.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">required</span><span class="op">)</span></span></code></pre></div>
+<p><img src="large-n_files/figure-html/n-trees-plot-1.png" class="r-plt" alt="" width="576"></p>
+<p>The answer is an integer and goes on behaving as one, so it can be
+handed straight back to the engine that raised the question:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">required</span> <span class="op">+</span> <span class="fl">100L</span></span>
+<span><span class="co">#&gt; [1] 300</span></span></code></pre></div>
 <p>The criterion falls as a power of the block size, so a target set too
 low is not reached by any ensemble you would fit. When that happens the
 result is <code>NA</code> and the projection says what it would
 take:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">unreachable</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/n_trees_required.html">n_trees_required</a></span><span class="op">(</span><span class="va">forest</span>, <span class="va">training</span>, eps <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>answer <span class="op">=</span> <span class="va">unreachable</span>, projected_trees <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">unreachable</span>, <span class="st">"projected"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          answer projected_trees </span></span>
 <span><span class="co">#&gt;              NA           20129</span></span></code></pre></div>
 <p><code><a href="../reference/stability.html">stability()</a></code> asks the same question of replicates you
 already hold, and makes no assumption about where they came from:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">replicates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">training</span>, ntree <span class="op">=</span> <span class="fl">250</span><span class="op">)</span>, newdata <span class="op">=</span> <span class="va">training</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/stability.html">stability</a></span><span class="op">(</span><span class="va">replicates</span><span class="op">)</span></span>
+<span><span class="va">agreement</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/stability.html">stability</a></span><span class="op">(</span><span class="va">replicates</span><span class="op">)</span></span>
+<span><span class="va">agreement</span></span>
 <span><span class="co">#&gt; &lt;proximity_stability&gt;</span></span>
 <span><span class="co">#&gt;   replicates : 4 on 600 observations</span></span>
 <span><span class="co">#&gt;   statistic  : mantel </span></span>
 <span><span class="co">#&gt;   comparisons: 6 pairs of replicates</span></span>
 <span><span class="co">#&gt;   median     : 0.9827 </span></span>
 <span><span class="co">#&gt;   95% percentile interval: 0.9811 to 0.9843</span></span></code></pre></div>
+<p>Its plot shows every one of the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><mo stretchy="false" form="prefix">(</mo><mi>R</mi><mo>−</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mn>2</mn></mrow><annotation encoding="application/x-tex">R(R-1)/2</annotation></semantics></math>
+comparisons, with the median and the percentile interval marked. There
+is no band around a curve here, because there is no curve: the object
+holds one set of dependent agreements, and the spread of them is the
+whole of what it can say.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">agreement</span><span class="op">)</span></span></code></pre></div>
+<p><img src="large-n_files/figure-html/stability-plot-1.png" class="r-plt" alt="" width="576"></p>
 </div>
 <div class="section level2">
 <h2 id="choosing-between-them">Choosing between them<a class="anchor" aria-label="anchor" href="#choosing-between-them"></a>

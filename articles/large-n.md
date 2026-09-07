@@ -201,23 +201,37 @@ trees that settles it is a question with an answer.
 
 required <- n_trees_required(forest, training, eps = 0.2)
 required
-#> [1] 200
-#> attr(,"path")
-#>   trees replicates        cv
-#> 1    25         20 0.5580558
-#> 2    50         10 0.3885353
-#> 3   100          5 0.2672441
-#> 4   200          2 0.1501387
-#> attr(,"projected")
-#> [1] NA
-#> attr(,"eps")
-#> [1] 0.2
+#> <proximity_trees>
+#>   target  : CV below 0.2 
+#>   searched: 25 to 200 trees per block, 4 block sizes 
+#>   answer  : 200 trees per block, at CV 0.15
 attr(required, "path")
 #>   trees replicates        cv
 #> 1    25         20 0.5580558
 #> 2    50         10 0.3885353
 #> 3   100          5 0.2672441
 #> 4   200          2 0.1501387
+```
+
+[`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
+draws the search it recorded: the criterion against the block size on
+log axes, with the target, the answer, and the power law fitted through
+the measured points.
+
+``` r
+
+autoplot(required)
+```
+
+![](large-n_files/figure-html/n-trees-plot-1.png)
+
+The answer is an integer and goes on behaving as one, so it can be
+handed straight back to the engine that raised the question:
+
+``` r
+
+required + 100L
+#> [1] 300
 ```
 
 The criterion falls as a power of the block size, so a target set too
@@ -241,7 +255,8 @@ came from:
 replicates <- lapply(1:4, function(i) {
   proximity(randomForest(y ~ ., data = training, ntree = 250), newdata = training)
 })
-stability(replicates)
+agreement <- stability(replicates)
+agreement
 #> <proximity_stability>
 #>   replicates : 4 on 600 observations
 #>   statistic  : mantel 
@@ -249,6 +264,19 @@ stability(replicates)
 #>   median     : 0.9827 
 #>   95% percentile interval: 0.9811 to 0.9843
 ```
+
+Its plot shows every one of the $`R(R-1)/2`$ comparisons, with the
+median and the percentile interval marked. There is no band around a
+curve here, because there is no curve: the object holds one set of
+dependent agreements, and the spread of them is the whole of what it can
+say.
+
+``` r
+
+autoplot(agreement)
+```
+
+![](large-n_files/figure-html/stability-plot-1.png)
 
 ## Choosing between them
 

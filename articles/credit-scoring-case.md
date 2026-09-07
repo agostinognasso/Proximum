@@ -1,8 +1,10 @@
 # A credit scoring case study
 
-> **Status.** Placeholder. The case study lands with the inference layer
-> (phase F2) and the scalability layer (phase F3), since a realistic
-> credit portfolio needs both.
+> **Status.** Placeholder. The inference layer, the scalability layer
+> and the views the sketch below calls have all landed; what is missing
+> is the `loans` data, and a case study on a portfolio nobody can load
+> is not a case study. The chunks are not evaluated until the dataset
+> ships with the package.
 
 Credit scoring is the running example across `Proximum`, `rankimp` and
 `e2tree`, for three reasons. The regulatory context makes explanation a

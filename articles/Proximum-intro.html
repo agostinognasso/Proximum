@@ -209,7 +209,7 @@ semi-definite, and here it is not:</p>
 <span>  oob   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/eigen.html" class="external-link">eigen</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">unclass</a></span><span class="op">(</span><span class="va">px_oob</span><span class="op">)</span>, symmetric <span class="op">=</span> <span class="cn">TRUE</span>, only.values <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">values</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;         inbag           oob </span></span>
-<span><span class="co">#&gt; -9.601070e-15 -6.469597e-01</span></span></code></pre></div>
+<span><span class="co">#&gt; -1.265658e-14 -6.469597e-01</span></span></code></pre></div>
 <p>The in-bag minimum is zero up to rounding; the out-of-bag one is not
 close to it. <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> reports this rather than letting it
 pass silently:</p>
@@ -267,14 +267,41 @@ the inference layer can answer, rather than a question nobody can
 ask.</p>
 </div>
 <div class="section level2">
-<h2 id="from-proximity-to-dissimilarity">From proximity to dissimilarity<a class="anchor" aria-label="anchor" href="#from-proximity-to-dissimilarity"></a>
+<h2 id="the-views">The views<a class="anchor" aria-label="anchor" href="#the-views"></a>
 </h2>
+<p><code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code> draws the object three ways, and which of
+them answers a question depends on the question.</p>
+<p>The heatmap orders the rows and columns by a seriation of the induced
+dissimilarity, so that the groups the forest learned line up along the
+diagonal rather than being scattered by the order the rows happened to
+arrive in. The axis labels are dropped with the original ordering: after
+the seriation an index is a position, not an observation.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/dist.html" class="external-link">as.dist</a></span><span class="op">(</span><span class="va">px</span><span class="op">)</span></span>
-<span><span class="va">mds</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/cmdscale.html" class="external-link">cmdscale</a></span><span class="op">(</span><span class="va">d</span>, k <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">mds</span>, col <span class="op">=</span> <span class="va">iris</span><span class="op">$</span><span class="va">Species</span>, pch <span class="op">=</span> <span class="fl">19</span>, xlab <span class="op">=</span> <span class="st">""</span>, ylab <span class="op">=</span> <span class="st">""</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"MDS of the forest proximity"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="Proximum-intro_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="" width="700"></p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">px</span>, type <span class="op">=</span> <span class="st">"heatmap"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="Proximum-intro_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="" width="480"></p>
+<p>The <code>"mds"</code> view is the configuration
+<code><a href="../reference/embedding.html">embedding()</a></code> returns, which is the classical scaling of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msqrt><mrow><mn>1</mn><mo>−</mo><mi>P</mi></mrow></msqrt><annotation encoding="application/x-tex">\sqrt{1 - P}</annotation></semantics></math>:
+the same coordinates as <code>cmdscale(as.dist(px), k = 2)</code>,
+agreeing here to 9.3e-16 up to the sign of each axis. The colouring is
+yours to pass. A <code>proximity</code> object carries the engine, the
+number of trees and the definition used, and nothing about the response,
+so a plot that coloured by class on its own would be inventing the
+class.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">px</span>, type <span class="op">=</span> <span class="st">"mds"</span>, colour <span class="op">=</span> <span class="va">iris</span><span class="op">$</span><span class="va">Species</span><span class="op">)</span></span></code></pre></div>
+<p><img src="Proximum-intro_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="576"></p>
+<p>The <code>"network"</code> view keeps the pairs above a threshold and
+reads the communities off the graph they form. That clustering is the
+forest’s own, recovered from the proximity, rather than one imposed on
+the observations from outside:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">px</span>, type <span class="op">=</span> <span class="st">"network"</span>, threshold <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span></span></code></pre></div>
+<p><img src="Proximum-intro_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" alt="" width="576"></p>
+<p>The first and the last of these need <code>seriation</code> and
+<code>igraph</code>, which are suggested rather than required and are
+refused by name when absent. The <code>"mds"</code> view needs
+neither.</p>
 </div>
 <div class="section level2">
 <h2 id="what-comes-next">What comes next<a class="anchor" aria-label="anchor" href="#what-comes-next"></a>
