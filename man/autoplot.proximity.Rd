@@ -76,19 +76,48 @@ n = 1600. Raise it when the picture is a hairball.
 
 \section{What the views draw from the random stream}{
 
-The heatmap and the network both draw from it, and both move with it. The
-layout and the community search are randomised outright. The seriation is
-randomised by the data it is given: a proximity is \eqn{k/B}, so it takes at
-most \eqn{B + 1} distinct values however many pairs there are, and on the
-150 irises of the example there are 197 distinct dissimilarities across
-11,175 pairs. The ordering breaks that many ties at random and moves with
-the seed; on the same matrix with the ties broken by hand it stops moving
-and stops drawing from the stream at all.
+Both of them draw from it. The layout and the community search of the
+network are randomised outright. The seriation of the heatmap is randomised
+by the matrix it is given, which is less obvious and was measured the wrong
+way round first: a proximity is \eqn{k/B}, so it takes at most \eqn{B + 1}
+distinct values however many pairs it has. Over eighteen cells at two sample
+sizes and three ensemble sizes, the dissimilarity took 43 distinct values
+across 19,900 pairs at 50 trees and 370 across 319,600 at 500. The ordering
+breaks the rest at random: it drew from the stream in seventeen of the
+eighteen and came back different under a second seed in seven. With the ties
+separated by a jitter below \eqn{1/B} it came back the same in all eighteen,
+though it still drew from the stream.
 
 Both views put back the stream they found, which is what keeps drawing a
-plot from moving the permutation tests around it. What they cannot do is
-make the picture independent of the state they were called in, so seed
-before the call when the figure has to come back the same.
+plot from moving the permutation tests around it. What neither can do is
+make the picture independent of the state it was called in, so seed before
+the call when the figure has to come back the same.
+}
+
+\section{What the heatmap costs}{
+
+It forms a data frame of \eqn{n^2} rows, the one thing in this package that
+is quadratic in the sample size on purpose. Median of three draws, forests
+of 200 trees:
+
+\tabular{lrrrrr}{
+\tab \strong{n = 200} \tab \strong{400} \tab \strong{800}
+\tab \strong{1600} \tab \strong{3200} \cr
+the seriation, seconds \tab 0.06 \tab 0.07 \tab 0.08 \tab 0.14
+\tab 0.46 \cr
+\code{autoplot()} in all, seconds \tab 0.08 \tab 0.07 \tab 0.10 \tab 0.21
+\tab 0.78 \cr
+drawing it, seconds \tab 0.02 \tab 0.06 \tab 0.25 \tab 0.92
+\tab 3.03 \cr
+the object, MB \tab 1.1 \tab 2.9 \tab 10.2 \tab 39.5 \tab 156.7
+}
+
+The seriation is not what costs, which is worth knowing because it is the
+part that looks expensive. The drawing is, and it grows as \eqn{n^2} with
+the matrix. At n = 3200 the whole call is under a second and the object is
+157 MB, so the view outlasts the point at which the matrix itself becomes
+the problem, and what runs out first is the page: ten million cells show a
+block structure and nothing finer.
 }
 
 \section{The view that could not be drawn}{

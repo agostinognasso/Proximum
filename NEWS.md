@@ -40,11 +40,20 @@
   expected case, through its force-directed layout and its community search.
   The heatmap was not: the seriation was written up as deterministic and
   measured otherwise, because a proximity is `k/B` and so takes at most
-  `B + 1` distinct values however many pairs it has. On the 150 irises of the
-  example there are 197 distinct dissimilarities across 11,175 pairs, the
-  ordering breaks that many ties at random, and it moves with the seed; on the
-  same matrix with the ties broken by a 1e-9 jitter it stops moving and draws
-  nothing from the stream at all.
+  `B + 1` distinct values however many pairs it has. Over the eighteen cells
+  of `inst/simulations/view-cost.R`, the dissimilarity took 43 distinct values
+  across 19,900 pairs at 50 trees and 370 across 319,600 at 500; the ordering
+  drew from the stream in seventeen of the eighteen and came back different
+  under a second seed in seven. With the ties separated by a jitter below
+  `1/B` it came back the same in all eighteen, though it still drew from the
+  stream. The first version of this entry claimed it stopped drawing too,
+  which was one ad hoc check rather than the study.
+* `inst/simulations/view-cost.R` is new, and measures what the heatmap costs.
+  Median of three draws on forests of 200 trees: at n = 800 the seriation takes
+  0.08 s, drawing takes 0.25 s and the plot object is 10.2 MB; at n = 3200,
+  0.46 s, 3.03 s and 156.7 MB. The seriation is not the expensive part, which
+  is worth knowing because it looks like it should be. The drawing is, and it
+  grows as `n^2` with the matrix.
 * `reject_unused()` now takes the advice at the end of its message from the
   caller, and `autoplot()` uses it: `color` for `colour` would otherwise have
   drawn an uncoloured plot and said nothing about why.
