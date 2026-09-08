@@ -311,6 +311,9 @@ cycle, which is what the `stable` badge is a promise about.
 
 ## Initial scaffolding
 
+These entries record how the package was built up on the way to this release.
+The phases they name as scheduled are all complete in 1.0.0.
+
 * `as_proximity()` generic with a method for `randomForest` fits, supporting the
   in-bag and out-of-bag definitions. Pairs never jointly out-of-bag are `NA`
   rather than `0`.
