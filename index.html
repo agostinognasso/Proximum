@@ -60,46 +60,347 @@
 </h1></div>
 <!-- badges: start -->
 
-<p>The proximity matrix of a tree ensemble records how often two observations fall in the same leaf. <code>randomForest</code> will compute it for you and then leave you to it: there is no way in R to test whether two forests represent the data the same way, to ask how many trees a stable proximity needs, or to compute the thing at all when <code>n</code> is large.</p>
-<p><code>Proximum</code> treats the proximity matrix as a first-class statistical object rather than as a by-product of the model: one extractor across engines, in-bag and out-of-bag definitions, the transformations and metric diagnostics that go with them, and permutation inference for comparing two matrices or partitioning one. It also holds a Nystrom approximation and a thresholded sparse form for samples too large to keep the matrix, and measures how far the proximity moves between replicates of the ensemble. The plots are planned; the function that will provide them is documented and raises an error naming its release.</p>
-<p>It is the methodological layer underneath <a href="https://cran.r-project.org/package=e2tree" class="external-link"><code>e2tree</code></a>, which reconstructs a forest’s behaviour from exactly this similarity structure.</p>
+<p>Statistical analysis of the proximity matrices that tree ensembles produce.</p>
+<div class="section level2">
+<h2 id="the-problem">The problem<a class="anchor" aria-label="anchor" href="#the-problem"></a>
+</h2>
+<p>Fit a random forest and you get predictions, and you get an importance table. You also get, whether you ask for it or not, an answer to a different question: which observations does this model consider to be the same kind of thing? Two observations that keep landing in the same leaf are, as far as the forest is concerned, alike. Collect that over every tree and you have the <strong>proximity matrix</strong></p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>P</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>=</mo><mfrac><mn>1</mn><mi>B</mi></mfrac><munderover><mo>∑</mo><mrow><mi>b</mi><mo>=</mo><mn>1</mn></mrow><mi>B</mi></munderover><mi>𝕀</mi><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">[</mo><msub><mi>ℓ</mi><mi>b</mi></msub><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>ℓ</mi><mi>b</mi></msub><mo stretchy="false" form="prefix">(</mo><msub><mi>x</mi><mi>j</mi></msub><mo stretchy="false" form="postfix">)</mo><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">]</mo><mo>,</mo></mrow><annotation encoding="application/x-tex">P_{ij} = \frac{1}{B}\sum_{b=1}^{B} \mathbb{I}\big[\ell_b(x_i) = \ell_b(x_j)\big],</annotation></semantics></math></p>
+<p>with <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ℓ</mi><mi>b</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\ell_b(x)</annotation></semantics></math> the leaf of tree <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>b</mi><annotation encoding="application/x-tex">b</annotation></semantics></math> that <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math> reaches. It is a full description of the geometry the model learned, and it is the only part of a forest that talks about the observations rather than about the variables.</p>
+<p><code>randomForest</code> will compute it if you pass <code>proximity = TRUE</code>, hand you the matrix, and stop. There is no way in R to ask of it any of the questions that make it a statistical object rather than a picture:</p>
+<ul>
+<li>Do two forests represent the data the same way? Two engines, two random seeds, this year’s model against last year’s.</li>
+<li>How much of the structure is explained by the response, and how much by something the model never saw?</li>
+<li>Is it stable? A matrix that changes when you refit is not evidence of anything, and nobody says how many trees it takes.</li>
+<li>What do you do when <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math> is large? The matrix is <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">n \times n</annotation></semantics></math>: 31 MB at <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>2</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">n = 2{,}000</annotation></semantics></math> and about 760 MB at <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>10</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">n = 10{,}000</annotation></semantics></math>.</li>
+<li>Is it even a valid kernel? The out-of-bag definition, which is the one that removes the optimistic bias, is <strong>not</strong> positive semi-definite, and every method downstream that assumes a kernel is quietly wrong on it.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="what-the-package-does-instead">What the package does instead<a class="anchor" aria-label="anchor" href="#what-the-package-does-instead"></a>
+</h2>
+<p>One extractor across engines, both definitions, the transforms and metric diagnostics that go with them, permutation inference for comparing matrices and partitioning one, two storage forms for when the matrix does not fit, a stability layer, and five plots. Every number in the documentation comes from a simulation study shipped in <code>inst/simulations/</code>, and several of those studies exist because they contradicted something that had been written down first.</p>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>Not on CRAN yet. Install from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"agostinognasso/Proximum"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
+<h2 id="a-worked-example-end-to-end">A worked example, end to end<a class="anchor" aria-label="anchor" href="#a-worked-example-end-to-end"></a>
 </h2>
+<p>The package ships a synthetic consumer loan portfolio. It is generated rather than collected, and <code><a href="reference/loans.html">?loans</a></code> says exactly what was built into it and why; the short version is that public credit panels with a protected attribute left in them do not exist, and one of the questions below needs one.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/agostinognasso/Proximum" class="external-link">Proximum</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.stat.berkeley.edu/~breiman/RandomForests/" class="external-link">randomForest</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; randomForest 4.7-1.2</span></span>
+<span><span class="co">#&gt; Type rfNews() to see new features/changes/bug fixes.</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">loans</span>, give.attr <span class="op">=</span> <span class="cn">FALSE</span>, vec.len <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 'data.frame':    2000 obs. of  13 variables:</span></span>
+<span><span class="co">#&gt;  $ default        : Factor w/ 2 levels "no","yes": 1 1 1 1 1 ...</span></span>
+<span><span class="co">#&gt;  $ amount         : num  8125 4425 ...</span></span>
+<span><span class="co">#&gt;  $ income         : num  27233 30134 ...</span></span>
+<span><span class="co">#&gt;  $ dti            : num  0.436 0.255 0.385 0.562 0.397 ...</span></span>
+<span><span class="co">#&gt;  $ term           : Factor w/ 2 levels "36 months","60 months": 2 1 2 1 1 ...</span></span>
+<span><span class="co">#&gt;  $ employment     : num  6 7 17 0 3 ...</span></span>
+<span><span class="co">#&gt;  $ score          : num  720 673 644 758 553 ...</span></span>
+<span><span class="co">#&gt;  $ utilisation    : num  0.352 0.445 0.566 0.345 0.367 ...</span></span>
+<span><span class="co">#&gt;  $ delinquencies  : int  0 2 0 0 0 ...</span></span>
+<span><span class="co">#&gt;  $ home           : Factor w/ 3 levels "rent","mortgage",..: 3 3 2 2 2 ...</span></span>
+<span><span class="co">#&gt;  $ purpose        : Factor w/ 5 levels "debt consolidation",..: 5 1 1 1 1 ...</span></span>
+<span><span class="co">#&gt;  $ vintage        : Factor w/ 4 levels "2019","2020",..: 1 1 1 1 1 ...</span></span>
+<span><span class="co">#&gt;  $ applicant_group: Factor w/ 2 levels "A","B": 1 1 1 1 2 ...</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="the-proximity-and-what-it-is">The proximity, and what it is<a class="anchor" aria-label="anchor" href="#the-proximity-and-what-it-is"></a>
+</h3>
+<p><code><a href="reference/as_proximity.html">as_proximity()</a></code> takes a fitted ensemble and the data it was fitted on.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">predictors</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">loans</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"applicant_group"</span>, <span class="st">"vintage"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">rf</span> <span class="op">&lt;-</span> <span class="fu">randomForest</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span></span>
-<span>  <span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">iris</span>, ntree <span class="op">=</span> <span class="fl">200</span>, keep.inbag <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
+<span><span class="va">book</span> <span class="op">&lt;-</span> <span class="va">loans</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">loans</span><span class="op">)</span>, <span class="fl">400</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="va">rf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">default</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">book</span><span class="op">[</span>, <span class="va">predictors</span><span class="op">]</span>, ntree <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">px</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">rf</span>, newdata <span class="op">=</span> <span class="va">iris</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">px</span><span class="op">)</span></span>
+<span><span class="va">px</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">rf</span>, newdata <span class="op">=</span> <span class="va">book</span><span class="op">[</span>, <span class="va">predictors</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">px</span></span>
+<span><span class="co">#&gt; &lt;proximity&gt; 400 x 400 </span></span>
+<span><span class="co">#&gt;   engine : randomForest </span></span>
+<span><span class="co">#&gt;   trees  : 500 </span></span>
+<span><span class="co">#&gt;   type   : inbag</span></span></code></pre></div>
+<p>The name is <code><a href="reference/as_proximity.html">as_proximity()</a></code> and not <code>proximity()</code> because <code>e2tree</code>, the package most likely to be attached alongside this one, exports a <code>proximity()</code> of its own. The <code>as_</code> prefix also says what it does: it coerces a fitted ensemble into an object of class <code>proximity</code>, the way <code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">as.dist()</a></code> coerces into a <code>dist</code>.</p>
+<p><code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> reports what the matrix looks like and, more usefully, whether the dissimilarity it induces can be embedded in a Euclidean space at all.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">px</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;proximity&gt; summary</span></span>
-<span><span class="co">#&gt;   observations : 150 </span></span>
-<span><span class="co">#&gt;   engine       : randomForest ( 200 trees )</span></span>
+<span><span class="co">#&gt;   observations : 400 </span></span>
+<span><span class="co">#&gt;   engine       : randomForest ( 500 trees )</span></span>
 <span><span class="co">#&gt;   type         : inbag </span></span>
 <span><span class="co">#&gt;   off-diagonal :</span></span>
-<span><span class="co">#&gt;   0%  25%  50%  75% 100% </span></span>
-<span><span class="co">#&gt; 0.00 0.00 0.00 0.59 1.00 </span></span>
-<span><span class="co">#&gt;   exact zeros  : 58.9% </span></span>
+<span><span class="co">#&gt;    0%   25%   50%   75%  100% </span></span>
+<span><span class="co">#&gt; 0.000 0.010 0.052 0.156 0.972 </span></span>
+<span><span class="co">#&gt;   exact zeros  : 10.7% </span></span>
 <span><span class="co">#&gt;   euclidean    : TRUE</span></span></code></pre></div>
-<p>Switching to <code>type = "oob"</code> removes the optimistic bias of the in-bag definition, at the cost of positive semi-definiteness: the out-of-bag proximity is not a kernel, and <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> says so. See <code><a href="articles/Proximum-intro.html">vignette("Proximum-intro")</a></code>.</p>
+</div>
+<div class="section level3">
+<h3 id="the-one-thing-everybody-gets-wrong">The one thing everybody gets wrong<a class="anchor" aria-label="anchor" href="#the-one-thing-everybody-gets-wrong"></a>
+</h3>
+<p>The in-bag proximity above averages over <em>all</em> trees, including the trees that were fitted on <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>. Those trees have seen both observations and are inclined to separate them correctly, which inflates the proximity of same-class pairs. Restricting the average to the trees where both were out-of-bag removes that bias, and costs the geometry:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">rf_oob</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">default</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">book</span><span class="op">[</span>, <span class="va">predictors</span><span class="op">]</span>, ntree <span class="op">=</span> <span class="fl">500</span>,</span>
+<span>                       keep.inbag <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">px_oob</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">rf_oob</span>, newdata <span class="op">=</span> <span class="va">book</span><span class="op">[</span>, <span class="va">predictors</span><span class="op">]</span>, type <span class="op">=</span> <span class="st">"oob"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>inbag <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">px</span><span class="op">)</span><span class="op">$</span><span class="va">euclidean</span>, oob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">px_oob</span><span class="op">)</span><span class="op">$</span><span class="va">euclidean</span><span class="op">)</span></span>
+<span><span class="co">#&gt; inbag   oob </span></span>
+<span><span class="co">#&gt;  TRUE FALSE</span></span></code></pre></div>
+<p>This is not an accident of the data. Stack the leaf indicators into <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Z</mi><annotation encoding="application/x-tex">Z</annotation></semantics></math>: the in-bag proximity is <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mo>=</mo><mi>Z</mi><msup><mi>Z</mi><mi>⊤</mi></msup><mi>/</mi><mi>B</mi></mrow><annotation encoding="application/x-tex">P = ZZ^{\top}/B</annotation></semantics></math>, a Gram matrix, hence positive semi-definite. The out-of-bag one divides each entry by the number of trees in which that <em>pair</em> was jointly out of bag, making it a Hadamard quotient of two Gram matrices, which need not be positive semi-definite and here is not. Debiasing the estimate costs the geometry. <code><a href="reference/make_psd.html">make_psd()</a></code> will repair it and record what it did, and <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> refuses to let the question pass silently either way.</p>
+</div>
+<div class="section level3">
+<h3 id="looking-at-it">Looking at it<a class="anchor" aria-label="anchor" href="#looking-at-it"></a>
+</h3>
+<p>Three views of the same object, and which one answers a question depends on the question.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">px</span>, type <span class="op">=</span> <span class="st">"heatmap"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-heatmap-1.png" alt="" width="100%"></p>
+<p>The rows and columns are ordered by a seriation of the induced dissimilarity, so the blocks the ensemble learned line up along the diagonal instead of being scattered by the order the rows arrived in.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">px</span>, type <span class="op">=</span> <span class="st">"mds"</span>, colour <span class="op">=</span> <span class="va">book</span><span class="op">$</span><span class="va">default</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-mds-1.png" alt="" width="100%"></p>
+<p>The colouring is yours to pass. A <code>proximity</code> object carries the engine, the number of trees and the definition used, and nothing about the response, so a plot that coloured by outcome on its own would be inventing the outcome.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">11</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">px</span>, type <span class="op">=</span> <span class="st">"network"</span>, threshold <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-network-1.png" alt="" width="100%"></p>
+<p>The network keeps the pairs above a threshold and reads the communities of the graph that remain. Those communities are the forest’s own clustering, recovered from the proximity rather than imposed from outside; <code><a href="articles/credit-scoring-case.html">vignette("credit-scoring-case")</a></code> asks whether they are risk segments and finds one that defaults at close to nine in ten against a book rate of one in six.</p>
+</div>
+<div class="section level3">
+<h3 id="comparing-two-forests">Comparing two forests<a class="anchor" aria-label="anchor" href="#comparing-two-forests"></a>
+</h3>
+<p>This is the question the package was written for. Fit a second forest, on the same data, differing only in the seed, and ask whether the two represent the borrowers the same way.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">rf2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">default</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">book</span><span class="op">[</span>, <span class="va">predictors</span><span class="op">]</span>, ntree <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span>
+<span><span class="va">px2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">rf2</span>, newdata <span class="op">=</span> <span class="va">book</span><span class="op">[</span>, <span class="va">predictors</span><span class="op">]</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/mantel_test.html">mantel_test</a></span><span class="op">(</span><span class="va">px</span>, <span class="va">px2</span>, n_perm <span class="op">=</span> <span class="fl">999</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  Mantel test (pearson, 999 permutations of the observations)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; data:  px and px2</span></span>
+<span><span class="co">#&gt; r = 0.99192, pairs = 79800, permutations = 999, p-value = 0.001</span></span>
+<span><span class="co">#&gt; alternative hypothesis: greater</span></span></code></pre></div>
+<p>Two refits of the same forest agree almost perfectly, which is the answer you would hope for and the reference level everything else is read against. Change what the forest is allowed to look at, and it moves:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">thin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">default</span> <span class="op">~</span> <span class="va">score</span> <span class="op">+</span> <span class="va">utilisation</span>, data <span class="op">=</span> <span class="va">book</span>, ntree <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/mantel_test.html">mantel_test</a></span><span class="op">(</span><span class="va">px</span>, <span class="fu"><a href="reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">thin</span>, newdata <span class="op">=</span> <span class="va">book</span><span class="op">)</span>, n_perm <span class="op">=</span> <span class="fl">999</span><span class="op">)</span><span class="op">$</span><span class="va">statistic</span></span>
+<span><span class="co">#&gt;         r </span></span>
+<span><span class="co">#&gt; 0.5257286</span></span></code></pre></div>
+<p>Three statistics are offered and they do not measure the same thing. <code><a href="reference/mantel_test.html">mantel_test()</a></code> correlates the pairwise values and runs the whole range; <code><a href="reference/cka.html">cka()</a></code> aligns the centred kernels; <code><a href="reference/cka.html">rv_coefficient()</a></code> is the matrix correlation. Measured over 20 replications at <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>300</mn></mrow><annotation encoding="application/x-tex">n = 300</annotation></semantics></math>, on forests with <em>nothing</em> in common at all, Mantel reads 0.000 and CKA reads 0.670, and CKA cannot separate replicates of one ensemble (0.991) from forests fitted to different predictors with the same response (0.959). Use Mantel unless the question really is about the kernels.</p>
+</div>
+<div class="section level3">
+<h3 id="partitioning-the-variation">Partitioning the variation<a class="anchor" aria-label="anchor" href="#partitioning-the-variation"></a>
+</h3>
+<p><code><a href="reference/permanova.html">permanova()</a></code> puts the proximity on the left of a design and asks how much of it each term accounts for. The interesting use is a term the model never received:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/permanova.html">permanova</a></span><span class="op">(</span><span class="va">px</span>, <span class="op">~</span> <span class="va">default</span> <span class="op">+</span> <span class="va">applicant_group</span>, data <span class="op">=</span> <span class="va">book</span>, n_perm <span class="op">=</span> <span class="fl">999</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Permutation test for the proximity dissimilarity</span></span>
+<span><span class="co">#&gt; Terms added sequentially (first to last), 999 permutations of the observations</span></span>
+<span><span class="co">#&gt; Dissimilarity: sqrt(1 - P) on px</span></span>
+<span><span class="co">#&gt; Model: ~default + applicant_group</span></span>
+<span><span class="co">#&gt;                  Df SumOfSqs      R2      F Pr(&gt;F)    </span></span>
+<span><span class="co">#&gt; default           1    5.973 0.03359 13.864  0.001 ***</span></span>
+<span><span class="co">#&gt; applicant_group   1    0.803 0.00451  1.863  0.003 ** </span></span>
+<span><span class="co">#&gt; Residual        397  171.048 0.96190                  </span></span>
+<span><span class="co">#&gt; Total           399  177.824 1.00000                  </span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></span></code></pre></div>
+<p><code>applicant_group</code> is a protected attribute. It was not in the formula, and in the generating process it affects the default probability nowhere at all. It does shift the income and the score, which <em>are</em> in the formula, so the forest separates the groups anyway, and this is how much: a small share, reliably not zero, measured on a model that never saw the attribute. That is a fairness diagnostic that does not require the model to have used the thing you are worried about.</p>
+</div>
+<div class="section level3">
+<h3 id="how-many-trees-does-this-need">How many trees does this need?<a class="anchor" aria-label="anchor" href="#how-many-trees-does-this-need"></a>
+</h3>
+<p>A proximity matrix that moves when you refit is not evidence of anything. <code><a href="reference/n_trees_required.html">n_trees_required()</a></code> grows the ensemble in disjoint blocks and stops when the entries stop moving between them.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">required</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/n_trees_required.html">n_trees_required</a></span><span class="op">(</span><span class="va">rf</span>, <span class="va">book</span><span class="op">[</span>, <span class="va">predictors</span><span class="op">]</span>, eps <span class="op">=</span> <span class="fl">0.15</span><span class="op">)</span></span>
+<span><span class="va">required</span></span>
+<span><span class="co">#&gt; &lt;proximity_trees&gt;</span></span>
+<span><span class="co">#&gt;   target  : CV below 0.15 </span></span>
+<span><span class="co">#&gt;   searched: 25 to 200 trees per block, 4 block sizes </span></span>
+<span><span class="co">#&gt;   answer  : 200 trees per block, at CV 0.135</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">required</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-trees-plot-1.png" alt="" width="100%"></p>
+<p>The criterion falls as a power of the block size, and the exponent is fitted rather than assumed: over four generating processes and both engines it lay between <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mn>0.55</mn></mrow><annotation encoding="application/x-tex">-0.55</annotation></semantics></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mn>0.60</mn></mrow><annotation encoding="application/x-tex">-0.60</annotation></semantics></math> with <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>R</mi><mn>2</mn></msup><annotation encoding="application/x-tex">R^2</annotation></semantics></math> of at least 0.98, so it is a clean power law whose exponent is not the <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mn>0.5</mn></mrow><annotation encoding="application/x-tex">-0.5</annotation></semantics></math> a plain standard error would give. The answer is an ordinary integer and goes on behaving as one, so it can be handed straight back to the engine that raised the question:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">required</span> <span class="op">+</span> <span class="fl">100L</span></span>
+<span><span class="co">#&gt; [1] 300</span></span></code></pre></div>
+<p><code><a href="reference/stability.html">stability()</a></code> asks the same question of replicates you already hold, and assumes nothing about where they came from.</p>
+</div>
+<div class="section level3">
+<h3 id="when-the-matrix-does-not-fit">When the matrix does not fit<a class="anchor" aria-label="anchor" href="#when-the-matrix-does-not-fit"></a>
+</h3>
+<p>Two storage forms, and they are not interchangeable.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/sparsify.html">sparsify</a></span><span class="op">(</span><span class="va">px</span>, threshold <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;proximity_sparse&gt; 400 x 400 </span></span>
+<span><span class="co">#&gt;   engine   : randomForest </span></span>
+<span><span class="co">#&gt;   trees    : 500 </span></span>
+<span><span class="co">#&gt;   type     : inbag </span></span>
+<span><span class="co">#&gt;   threshold: 0.05 </span></span>
+<span><span class="co">#&gt;   stored   : 50.4% of entries</span></span>
+<span><span class="fu"><a href="reference/nystrom.html">nystrom</a></span><span class="op">(</span><span class="va">rf</span>, <span class="va">book</span><span class="op">[</span>, <span class="va">predictors</span><span class="op">]</span>, landmarks <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;proximity_nystrom&gt; 400 x 400 </span></span>
+<span><span class="co">#&gt;   engine   : randomForest </span></span>
+<span><span class="co">#&gt;   trees    : 500 </span></span>
+<span><span class="co">#&gt;   type     : inbag </span></span>
+<span><span class="co">#&gt;   landmarks: 100 of 400 </span></span>
+<span><span class="co">#&gt;   rank     : 100  </span></span>
+<span><span class="co">#&gt;   stored   : 312.7 Kb against 1.2 Mb dense</span></span></code></pre></div>
+<p><code><a href="reference/sparsify.html">sparsify()</a></code> thresholds and stores the result sparsely. It saves memory and <strong>does not survive being used</strong>: every statistic here runs on <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msqrt><mrow><mn>1</mn><mo>−</mo><mi>P</mi></mrow></msqrt><annotation encoding="application/x-tex">\sqrt{1 - P}</annotation></semantics></math> or on the doubly centred matrix, and across every sample size measured those had between 99.5 and 99.9 per cent, and exactly 100 per cent, of their entries non-zero. So the inference layer refuses a sparse object by name rather than densifying it behind you.</p>
+<p><code><a href="reference/nystrom.html">nystrom()</a></code> is the one that survives. It stores an <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mi>r</mi></mrow><annotation encoding="application/x-tex">n \times r</annotation></semantics></math> factor whose cross-product is the approximation, so the <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">n \times n</annotation></semantics></math> matrix is never formed going in or coming out: 40 MB instead of 760 at <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>10</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">n = 10{,}000</annotation></semantics></math> with 500 landmarks. Its entries move much more than its geometry does, which is the point, since the geometry is what it is for: at <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>400</mn></mrow><annotation encoding="application/x-tex">n = 400</annotation></semantics></math> with 200 landmarks, 20.7 per cent relative error on the entries and 4.9 per cent on the configuration <code><a href="reference/embedding.html">embedding()</a></code> returns.</p>
+</div>
+<div class="section level3">
+<h3 id="closing-the-loop-with-e2tree">Closing the loop with <code>e2tree</code>
+<a class="anchor" aria-label="anchor" href="#closing-the-loop-with-e2tree"></a>
+</h3>
+<p><code>e2tree</code> fits a single explainable tree to the dissimilarity a forest induces. It takes that dissimilarity as an argument, which is exactly what this package produces, and returns a tree whose own partition comes back as a proximity:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">explanation</span> <span class="op">&lt;-</span> <span class="fu">e2tree</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/e2tree/man/e2tree.html" class="external-link">e2tree</a></span><span class="op">(</span><span class="va">default</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">book</span><span class="op">[</span>, <span class="va">predictors</span><span class="op">]</span>,</span>
+<span>                              D <span class="op">=</span> <span class="fu"><a href="reference/as_dissimilarity.html">as_dissimilarity</a></span><span class="op">(</span><span class="va">px</span><span class="op">)</span>, ensemble <span class="op">=</span> <span class="va">rf</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/mantel_test.html">mantel_test</a></span><span class="op">(</span><span class="va">px</span>, <span class="fu"><a href="reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">explanation</span><span class="op">)</span>, n_perm <span class="op">=</span> <span class="fl">999</span><span class="op">)</span><span class="op">$</span><span class="va">statistic</span></span>
+<span><span class="co">#&gt;        r </span></span>
+<span><span class="co">#&gt; 0.653591</span></span></code></pre></div>
+<p>That correlation is how much of the ensemble’s geometry the single tree reproduces, which is the question <code>e2tree</code> exists to answer and the one thing it cannot ask of itself.</p>
+</div>
+<div class="section level3">
+<h3 id="what-the-example-showed">What the example showed<a class="anchor" aria-label="anchor" href="#what-the-example-showed"></a>
+</h3>
+<p>The forest arranged 400 borrowers into blocks; one of those blocks is an interaction no coefficient would have shown you. Two refits of the same forest agreed almost perfectly and a forest given two predictors instead of ten did not, so the statistic separates the cases it needs to separate. A protected attribute that the model never received still accounted for a measurable share of the arrangement. And the whole thing was checked for stability, for the number of trees it rests on, and for whether it is a kernel at all.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="the-theory-underneath">The theory underneath<a class="anchor" aria-label="anchor" href="#the-theory-underneath"></a>
+</h2>
+<p><strong>The Gram identity.</strong> With <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Z</mi><annotation encoding="application/x-tex">Z</annotation></semantics></math> the stacked leaf indicator, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mo>=</mo><mi>Z</mi><msup><mi>Z</mi><mi>⊤</mi></msup><mi>/</mi><mi>B</mi></mrow><annotation encoding="application/x-tex">P = ZZ^{\top}/B</annotation></semantics></math>. This settles three things at once: the in-bag proximity is positive semi-definite, so <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msqrt><mrow><mn>1</mn><mo>−</mo><mi>P</mi></mrow></msqrt><annotation encoding="application/x-tex">\sqrt{1-P}</annotation></semantics></math> is Euclidean; the out-of-bag one is an elementwise quotient of two such products and is not; and the matrix can be computed as one sparse cross-product instead of a loop over trees. On 300 trees and 1,500 observations that is 0.16 s against 13 s.</p>
+<p><strong>Classical scaling and the kernel are the same computation.</strong> With <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>D</mi><mn>2</mn></msup><mo>=</mo><mn>𝟏</mn><msup><mn>𝟏</mn><mi>⊤</mi></msup><mo>−</mo><mi>P</mi></mrow><annotation encoding="application/x-tex">D^2 = \mathbf{1}\mathbf{1}^{\top} - P</annotation></semantics></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>J</mi><annotation encoding="application/x-tex">J</annotation></semantics></math> the centring operator, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>J</mi><mn>𝟏</mn><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">J\mathbf{1} = 0</annotation></semantics></math> kills the first term and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>G</mi><mo>=</mo><mi>−</mi><mstyle displaystyle="false"><mfrac><mn>1</mn><mn>2</mn></mfrac></mstyle><mi>J</mi><msup><mi>D</mi><mn>2</mn></msup><mi>J</mi><mo>=</mo><mstyle displaystyle="false"><mfrac><mn>1</mn><mn>2</mn></mfrac></mstyle><mi>J</mi><mi>P</mi><mi>J</mi></mrow><annotation encoding="application/x-tex">G = -\tfrac12 J D^2 J = \tfrac12 J P J</annotation></semantics></math>. So <code><a href="reference/embedding.html">embedding()</a></code> never has to form the dissimilarity, and the same identity is what lets it read a configuration off a Nystrom factor at <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><msup><mi>r</mi><mn>2</mn></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">O(nr^2)</annotation></semantics></math> instead of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false" form="prefix">(</mo><msup><mi>n</mi><mn>3</mn></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">O(n^3)</annotation></semantics></math>.</p>
+<p><strong>Permutation, not asymptotics.</strong> Every entry of a proximity matrix shares an observation with <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>−</mo><mn>2</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">2(n-2)</annotation></semantics></math> others, so the entries are nowhere near independent and no closed-form null applies. All the tests here permute the observations, which permutes rows and columns together and preserves that dependence.</p>
+<p><strong>Undefined is not zero.</strong> An out-of-bag pair that was never jointly out of bag is <code>NA</code>, not <code>0</code>. Storing a zero would assert that the two observations never share a leaf, when what the forest reported is that it never had the chance to look. Every statistic is computed on the pairs where all matrices involved are defined, and reports how many those were.</p>
+</div>
+<div class="section level2">
+<h2 id="every-exported-function">Every exported function<a class="anchor" aria-label="anchor" href="#every-exported-function"></a>
+</h2>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<tbody>
+<tr>
+<td><code><a href="reference/as_proximity.html">as_proximity()</a></code></td>
+<td>the extractor, with methods for <code>randomForest</code>, <code>ranger</code> and <code>e2tree</code>
+</td>
+</tr>
+<tr>
+<td>
+<code><a href="reference/as_dissimilarity.html">as_dissimilarity()</a></code>, <code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">as.dist()</a></code>
+</td>
+<td>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msqrt><mrow><mn>1</mn><mo>−</mo><mi>P</mi></mrow></msqrt><annotation encoding="application/x-tex">\sqrt{1-P}</annotation></semantics></math> or <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo>−</mo><mi>P</mi></mrow><annotation encoding="application/x-tex">1-P</annotation></semantics></math>
+</td>
+</tr>
+<tr>
+<td>
+<code><a href="reference/is_euclidean.html">is_euclidean()</a></code>, <code><a href="reference/double_centre.html">double_centre()</a></code>
+</td>
+<td>the metric diagnostics</td>
+</tr>
+<tr>
+<td><code><a href="reference/make_psd.html">make_psd()</a></code></td>
+<td>clip, flip or shift an indefinite proximity onto the PSD cone</td>
+</tr>
+<tr>
+<td><code><a href="reference/embedding.html">embedding()</a></code></td>
+<td>the classical scaling configuration, direct or from a Nystrom factor</td>
+</tr>
+<tr>
+<td>
+<code><a href="reference/mantel_test.html">mantel_test()</a></code>, <code><a href="reference/cka.html">cka()</a></code>, <code><a href="reference/cka.html">rv_coefficient()</a></code>
+</td>
+<td>compare two proximity matrices</td>
+</tr>
+<tr>
+<td><code><a href="reference/permanova.html">permanova()</a></code></td>
+<td>partition one across the terms of a design</td>
+</tr>
+<tr>
+<td><code><a href="reference/protest.html">protest()</a></code></td>
+<td>superimpose two configurations, Procrustes</td>
+</tr>
+<tr>
+<td>
+<code><a href="reference/sparsify.html">sparsify()</a></code>, <code><a href="reference/nystrom.html">nystrom()</a></code>
+</td>
+<td>the two storage forms</td>
+</tr>
+<tr>
+<td>
+<code><a href="reference/stability.html">stability()</a></code>, <code><a href="reference/n_trees_required.html">n_trees_required()</a></code>
+</td>
+<td>how much it moves, and how many trees it takes</td>
+</tr>
+<tr>
+<td><code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code></td>
+<td>five methods, one per class</td>
+</tr>
+<tr>
+<td><code>loans</code></td>
+<td>the synthetic portfolio the case study runs on</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level2">
+<h2 id="what-has-been-measured">What has been measured<a class="anchor" aria-label="anchor" href="#what-has-been-measured"></a>
+</h2>
+<p>Four studies in <code>inst/simulations/</code>, seeded and re-runnable, and the documentation quotes them rather than the other way round. Several exist because a claim written down first turned out to be false when measured:</p>
+<ul>
+<li>
+<code><a href="reference/sparsify.html">?sparsify</a></code> said most pairs never share a leaf and the thresholded matrix is typically very sparse. The exact zeros are 14.3 per cent of pairs at <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>200</mn></mrow><annotation encoding="application/x-tex">n = 200</annotation></semantics></math> and 58.5 per cent at <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>1600</mn></mrow><annotation encoding="application/x-tex">n = 1600</annotation></semantics></math>. Replaced by the table.</li>
+<li>
+<code><a href="reference/n_trees_required.html">n_trees_required()</a></code> shipped with a default of <code>eps = 0.01</code>, which needs about 50,000 trees and was unreachable from any ensemble anyone would fit.</li>
+<li>The criterion was documented as falling like <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi>/</mi><msqrt><mi>B</mi></msqrt></mrow><annotation encoding="application/x-tex">1/\sqrt{B}</annotation></semantics></math>. The measured exponent is <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><mn>0.56</mn></mrow><annotation encoding="application/x-tex">-0.56</annotation></semantics></math>, and the projection now fits it instead of assuming it.</li>
+<li>Stratified landmarks were said to help. On the whole matrix they do not at all; on the rows they were designed for they do, and only when the budget is small relative to how rare the class is.</li>
+<li>The seriation behind the heatmap was documented as deterministic. It is not, on a proximity: the matrix is <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>k</mi><mi>/</mi><mi>B</mi></mrow><annotation encoding="application/x-tex">k/B</annotation></semantics></math> and takes at most <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>B</mi><mo>+</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">B+1</annotation></semantics></math> distinct values, so the ordering breaks the ties at random and moves with the seed.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="what-this-does-not-protect-you-from">What this does not protect you from<a class="anchor" aria-label="anchor" href="#what-this-does-not-protect-you-from"></a>
+</h2>
+<p>The proximity is a description of the model, not of the data. Everything here is a statement about how one fitted ensemble arranges one sample; a different forest on the same data arranges it differently, which is precisely what <code><a href="reference/stability.html">stability()</a></code> is for measuring rather than a caveat to be waved away.</p>
+<p>A Mantel correlation is not a hypothesis about the world. It tests exchangeability of the observation labels, and rejecting that null tells you the two matrices share structure, not that the structure means what you hoped.</p>
+<p><code><a href="reference/permanova.html">permanova()</a></code> on a proximity is a diagnostic and not a fairness certificate. A share of variation is one number about one representation.</p>
+<p>And the out-of-bag proximity is not a kernel. Every method downstream that assumes one, <code><a href="reference/cka.html">cka()</a></code> included, refuses it rather than returning something plausible, and <code><a href="reference/make_psd.html">make_psd()</a></code> is a choice you make and not a repair that happens to you.</p>
+</div>
+<div class="section level2">
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
+</h2>
+<ul>
+<li>
+<code><a href="articles/Proximum-intro.html">vignette("Proximum-intro")</a></code>: proximity matrices as statistical objects, the in-bag and out-of-bag definitions and what separates them, the three views.</li>
+<li>
+<code><a href="articles/comparing-forests.html">vignette("comparing-forests")</a></code>: the inference layer in full.</li>
+<li>
+<code><a href="articles/large-n.html">vignette("large-n")</a></code>: sparsification, Nystrom, stability, and how to choose.</li>
+<li>
+<code><a href="articles/credit-scoring-case.html">vignette("credit-scoring-case")</a></code>: the three questions above, worked.</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h2>
-<p>Early development. Extraction from <code>randomForest</code> and <code>ranger</code>, the dissimilarity transforms, the Euclidean diagnostics, the positive semi-definite repair, the inference layer, the scalability and stability layers, and the plots all work. What is still declared and not provided is the <code>streaming</code> argument that <code><a href="articles/large-n.html">vignette("large-n")</a></code> describes, and the <code>loans</code> data the credit scoring case study is written against.</p>
-<p>Every number quoted in the documentation comes from a script in <code>inst/simulations/</code>, and those are meant to be re-run rather than believed.</p>
+<p>Early development, pre-CRAN. Phases F1 to F4 are done: extraction from <code>randomForest</code>, <code>ranger</code> and <code>e2tree</code>, the transforms and diagnostics, the positive semi-definite repair, the inference layer, the scalability and stability layers, and the plots. What is declared and not provided is the <code>streaming</code> argument that <code><a href="articles/large-n.html">vignette("large-n")</a></code> describes and says so about.</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -115,9 +416,9 @@
 <tr>
 <td>F1</td>
 <td>
-<code>randomForest</code> and <code>ranger</code>, <code>proximity</code> object, transforms, <code><a href="reference/make_psd.html">make_psd()</a></code>
+<code><a href="reference/as_proximity.html">as_proximity()</a></code>, the <code>proximity</code> object, transforms, <code><a href="reference/make_psd.html">make_psd()</a></code>
 </td>
-<td>mostly done</td>
+<td>done</td>
 </tr>
 <tr>
 <td>F2</td>
@@ -136,8 +437,8 @@
 <tr>
 <td>F4</td>
 <td>
-<code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code>, vignettes, pkgdown</td>
-<td>done but pkgdown</td>
+<code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code>, the vignettes, the <code>loans</code> data</td>
+<td>done</td>
 </tr>
 <tr>
 <td>F5</td>
@@ -146,19 +447,33 @@
 </tr>
 </tbody>
 </table>
-<p>The proximity is computed as a sparse Gram matrix, <code>P = Z Z'/B</code> with <code>Z</code> the leaf indicator, rather than by looping over trees. On 300 trees and 1500 observations that is 0.16 s instead of 13 s, and the same identity is why the in-bag proximity is positive semi-definite while the out-of-bag one, an elementwise quotient of two Gram matrices, is not. The same <code>Z</code> is what <code><a href="reference/nystrom.html">nystrom()</a></code> multiplies against its landmark columns, which is how the approximation avoids the <code>n</code> by <code>n</code> matrix on the way in as well as on the way out.</p>
 </div>
 <div class="section level2">
 <h2 id="related-work">Related work<a class="anchor" aria-label="anchor" href="#related-work"></a>
 </h2>
 <ul>
 <li>
-<a href="https://cran.r-project.org/package=e2tree" class="external-link"><code>e2tree</code></a>: explains a forest with a single tree, built on the same similarity structure.</li>
+<a href="https://cran.r-project.org/package=e2tree" class="external-link"><code>e2tree</code></a>: explains a forest with a single tree built on the same similarity structure. It consumes what this package produces, and <code><a href="reference/as_proximity.html">as_proximity()</a></code> reads its result back.</li>
 <li>
 <a href="https://github.com/agostinognasso/rankimp" class="external-link"><code>rankimp</code></a>: which variables drive the representation <code>Proximum</code> describes.</li>
 <li>
 <a href="https://cran.r-project.org/package=vegan" class="external-link"><code>vegan</code></a>: the reference implementation of Mantel, PERMANOVA and Procrustes on ordinary dissimilarities. It cannot consume a matrix with undefined pairs, which is why this package implements them natively and uses <code>vegan</code> only in its tests, to check that the two agree where both apply.</li>
 </ul>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<p>Breiman, L. (2001). Random forests. <em>Machine Learning</em>, 45(1), 5-32.</p>
+<p>Anderson, M. J. (2001). A new method for non-parametric multivariate analysis of variance. <em>Austral Ecology</em>, 26(1), 32-46.</p>
+<p>McArdle, B. H. and Anderson, M. J. (2001). Fitting multivariate models to community data. <em>Ecology</em>, 82(1), 290-297.</p>
+<p>Cortes, C., Mohri, M. and Rostamizadeh, A. (2012). Algorithms for learning kernels based on centered alignment. <em>JMLR</em>, 13, 795-828.</p>
+<p>Williams, C. and Seeger, M. (2001). Using the Nystrom method to speed up kernel machines. <em>NeurIPS 13</em>.</p>
+<p>Bar-Joseph, Z., Gifford, D. K. and Jaakkola, T. S. (2001). Fast optimal leaf ordering for hierarchical clustering. <em>Bioinformatics</em>, 17, S22-S29.</p>
+</div>
+<div class="section level2">
+<h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
+</h2>
+<p>MIT, (c) Agostino Gnasso.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -197,6 +512,9 @@
 <ul class="list-unstyled">
 <li><a href="https://github.com/agostinognasso/Proximum/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/agostinognasso/Proximum/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
 <li><a href="https://github.com/agostinognasso/Proximum/actions/workflows/test-coverage.yaml" class="external-link"><img src="https://github.com/agostinognasso/Proximum/actions/workflows/test-coverage.yaml/badge.svg" alt="test-coverage"></a></li>
+<li><a href="https://github.com/agostinognasso/Proximum/actions/workflows/test-coverage.yaml" class="external-link"><img src="https://img.shields.io/badge/coverage-%E2%89%A595%25-brightgreen" alt="coverage"></a></li>
+<li><a href="https://github.com/agostinognasso/Proximum/blob/main/DESCRIPTION" class="external-link"><img src="https://img.shields.io/github/r-package/v/agostinognasso/Proximum?label=version" alt="R package version"></a></li>
+<li><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a></li>
 <li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
 </ul>
 </div>

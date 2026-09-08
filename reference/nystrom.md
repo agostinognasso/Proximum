@@ -75,9 +75,9 @@ dropped is reported by
 
 ## Two invariants that do not survive
 
-[`?proximity`](proximity.md) promises a symmetric matrix with a unit
-diagonal, and this is not one, which is why a `proximity_nystrom` is its
-own class rather than a `proximity`. \\\tilde{P}\_{ii} = \sum_k
+[`?as_proximity`](as_proximity.md) promises a symmetric matrix with a
+unit diagonal, and this is not one, which is why a `proximity_nystrom`
+is its own class rather than a `proximity`. \\\tilde{P}\_{ii} = \sum_k
 L\_{ik}^2\\, which equals one only when observation \\i\\ is a landmark.
 The mean departure is reported by
 [`summary()`](https://rdrr.io/r/base/summary.html) and is the cheapest

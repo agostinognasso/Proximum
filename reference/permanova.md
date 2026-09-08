@@ -136,11 +136,11 @@ set.seed(1)
 rows <- sample(nrow(iris), 60)
 rf <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
                                  ntree = 100, keep.inbag = TRUE)
-permanova(proximity(rf, newdata = iris[rows, ]), ~ Species,
+permanova(as_proximity(rf, newdata = iris[rows, ]), ~ Species,
           data = iris[rows, ], n_perm = 99)
 #> Permutation test for the proximity dissimilarity
 #> Terms added sequentially (first to last), 99 permutations of the observations
-#> Dissimilarity: sqrt(1 - P) on proximity(rf, newdata = iris[rows, ])
+#> Dissimilarity: sqrt(1 - P) on as_proximity(rf, newdata = iris[rows, ])
 #> Model: ~Species
 #>          Df SumOfSqs      R2   F Pr(>F)   
 #> Species   2  16.4135 0.78967 107   0.01 **

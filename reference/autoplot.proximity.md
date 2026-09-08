@@ -160,6 +160,6 @@ draws, [`sparsify()`](sparsify.md) for the threshold the network shares.
 ``` r
 set.seed(1)
 rf <- randomForest::randomForest(Species ~ ., data = iris, ntree = 200)
-px <- proximity(rf, newdata = iris)
+px <- as_proximity(rf, newdata = iris)
 autoplot(px, type = "mds", colour = iris$Species)
 ```

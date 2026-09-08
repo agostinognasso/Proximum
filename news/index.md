@@ -4,6 +4,54 @@
 
 ### New
 
+- The `proximity()` generic is renamed
+  [`as_proximity()`](../reference/as_proximity.md). `e2tree`, the
+  package most likely to be attached alongside this one, exports a
+  `proximity()` of its own, and two generics of one name mask each other
+  in whichever order the user happened to call
+  [`library()`](https://rdrr.io/r/base/library.html). The `as_` prefix
+  also says what the function does: it coerces a fitted ensemble into an
+  object of class `proximity`, which keeps its name. Nothing was ever
+  released under the old one, so there is no deprecated alias.
+
+- [`as_proximity()`](../reference/as_proximity.md) gains a method for
+  `e2tree` fits. An `e2tree` is one tree, so its proximity is an
+  indicator rather than a proportion, and it is still a Gram matrix over
+  the leaf indicators: positive semi-definite, of rank the number of
+  leaves. This closes a loop. `e2tree()` takes as its `D` argument the
+  dissimilarity this package induces, and reading its result back as a
+  proximity makes the explanation comparable with the ensemble it
+  explains, on the same footing, through
+  [`mantel_test()`](../reference/mantel_test.md). That is the question
+  `e2tree` exists to answer and the one thing it cannot ask of itself.
+
+- `loans` is a new dataset: 2,000 synthetic consumer loans over four
+  origination years, with the outcome, ten predictors, and one protected
+  attribute the model is not allowed to see. It is generated rather than
+  collected, because the public credit panels that can be redistributed
+  have had exactly that attribute stripped out, and the fairness
+  question the case study asks cannot be asked without one.
+  `inst/data-raw/loans.R` is the specification as code: the default rate
+  is 16.4 per cent and rises from 13.8 per cent in the 2019 vintage to
+  19.9 in 2022, utilisation carries three times the weight in the last
+  vintage that it carries in the first, and `applicant_group` shifts the
+  median income by 8,902 and the median score by 29 points while
+  affecting the default probability nowhere.
+
+- [`vignette("credit-scoring-case")`](../articles/credit-scoring-case.md)
+  is no longer a placeholder. Its three questions now have measured
+  answers: the forest isolates a segment of about sixty borrowers that
+  defaults at close to nine in ten against a book rate of one in six,
+  and that segment is the score-by-utilisation interaction rather than
+  either margin; four refits of one window agree at a Mantel correlation
+  of 0.991 while the early and late windows applied to the same
+  borrowers agree at 0.86; and the protected attribute the model never
+  received accounts for 0.4 per cent of the variation in the proximity
+  after the outcome, at `p = 0.002`.
+
+- The README is rewritten as the package’s illustrative page, with every
+  output in it produced by the code above it.
+
 - [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html)
   is implemented, and there are five methods rather than one. A
   `proximity` object gets `"heatmap"`, `"mds"` and `"network"`; a
@@ -280,12 +328,12 @@
   could be reached otherwise: they take a proximity, and handing them a
   dissimilarity would transform it twice.
 
-- [`proximity()`](../reference/proximity.md) gains a method for `ranger`
-  fits, with the same in-bag and out-of-bag definitions. The leaf
-  co-occurrence engine now normalises each tree’s leaf labels, since
-  engines disagree on where they start counting. On `iris`, the in-bag
-  proximities of a 300-tree `randomForest` and a 300-tree `ranger`
-  forest correlate at 0.998.
+- [`as_proximity()`](../reference/as_proximity.md) gains a method for
+  `ranger` fits, with the same in-bag and out-of-bag definitions. The
+  leaf co-occurrence engine now normalises each tree’s leaf labels,
+  since engines disagree on where they start counting. On `iris`, the
+  in-bag proximities of a 300-tree `randomForest` and a 300-tree
+  `ranger` forest correlate at 0.998.
 
 - [`make_psd()`](../reference/make_psd.md) projects an indefinite
   proximity onto the cone of positive semi-definite matrices, by
@@ -302,25 +350,26 @@
   storage classes by coercion or by dispatch and would have densified
   them without saying so. All three now refuse, through the same guard
   the inference functions use.
-- The error [`proximity()`](../reference/proximity.md) raises on an
-  unknown argument said that [`sparsify()`](../reference/sparsify.md)
+- The error [`as_proximity()`](../reference/as_proximity.md) raises on
+  an unknown argument said that [`sparsify()`](../reference/sparsify.md)
   and [`nystrom()`](../reference/nystrom.md) were scheduled for a later
   release. They are in this one, and the message now points at them.
 - The check that a `ranger` forest was kept at fitting time was
-  duplicated between [`proximity.ranger()`](../reference/proximity.md)
-  and the node extractor. It lives in the extractor, which is the only
-  place that needs it and the one [`nystrom()`](../reference/nystrom.md)
-  and [`n_trees_required()`](../reference/n_trees_required.md) also go
+  duplicated between
+  [`as_proximity.ranger()`](../reference/as_proximity.md) and the node
+  extractor. It lives in the extractor, which is the only place that
+  needs it and the one [`nystrom()`](../reference/nystrom.md) and
+  [`n_trees_required()`](../reference/n_trees_required.md) also go
   through.
 - The coverage floor in CI is 95 per cent, from 90. The package is at
   96.4.
 
 ### Correctness
 
-- The `...` of [`proximity()`](../reference/proximity.md) no longer
-  swallows arguments the method does not have. `vignettes/large-n.Rmd`
-  sketches a scalability layer with
-  `proximity(rf, newdata = df, sparse = TRUE, threshold = 0.05)`, and
+- The `...` of [`as_proximity()`](../reference/as_proximity.md) no
+  longer swallows arguments the method does not have.
+  `vignettes/large-n.Rmd` sketches a scalability layer with
+  `as_proximity(rf, newdata = df, sparse = TRUE, threshold = 0.05)`, and
   against the current code that call returned a dense matrix as though
   the request had been honoured. It was the one path in the package that
   answered wrongly rather than failing.
@@ -330,8 +379,8 @@
   CRAN and every package index display, and four of those layers did not
   exist. Two now do.
 
-- [`proximity()`](../reference/proximity.md) no longer relabels the
-  matrix stored by `randomForest`.
+- [`as_proximity()`](../reference/as_proximity.md) no longer relabels
+  the matrix stored by `randomForest`.
   [`randomForest()`](https://rdrr.io/pkg/randomForest/man/randomForest.html)
   declares `oob.prox = proximity`, so a fit made with `proximity = TRUE`
   carries the *out-of-bag* matrix; the previous code returned it
@@ -340,14 +389,14 @@
   call does not settle the question or when the stored type is not the
   one asked for.
 
-- [`print.proximity()`](../reference/proximity.md) counted missing
+- [`print.proximity()`](../reference/as_proximity.md) counted missing
   matrix cells and reported them as pairs, so it printed twice the
   number [`summary()`](https://rdrr.io/r/base/summary.html) did. It now
   counts pairs.
 
 ### Performance
 
-- [`proximity()`](../reference/proximity.md) computes the leaf
+- [`as_proximity()`](../reference/as_proximity.md) computes the leaf
   co-occurrence as a sparse Gram matrix, `P = Z Z'/B`, instead of
   looping over trees. On a forest of 300 trees fitted to 1500
   observations, the in-bag proximity went from 13.0 s to 0.16 s. The
@@ -361,9 +410,9 @@
 
 ### Initial scaffolding
 
-- [`proximity()`](../reference/proximity.md) generic with a method for
-  `randomForest` fits, supporting the in-bag and out-of-bag definitions.
-  Pairs never jointly out-of-bag are `NA` rather than `0`.
+- [`as_proximity()`](../reference/as_proximity.md) generic with a method
+  for `randomForest` fits, supporting the in-bag and out-of-bag
+  definitions. Pairs never jointly out-of-bag are `NA` rather than `0`.
 - [`as.matrix()`](https://rdrr.io/r/base/matrix.html),
   [`as.dist()`](https://rdrr.io/r/stats/dist.html),
   [`print()`](https://rdrr.io/r/base/print.html) and

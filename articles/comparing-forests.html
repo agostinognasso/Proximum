@@ -96,8 +96,8 @@ observations.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">rf_deep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">df</span>, ntree <span class="op">=</span> <span class="fl">300</span>, keep.inbag <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">px1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">rf_shallow</span>, newdata <span class="op">=</span> <span class="va">df</span><span class="op">)</span></span>
-<span><span class="va">px2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">rf_deep</span>, newdata <span class="op">=</span> <span class="va">df</span><span class="op">)</span></span>
+<span><span class="va">px1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">rf_shallow</span>, newdata <span class="op">=</span> <span class="va">df</span><span class="op">)</span></span>
+<span><span class="va">px2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">rf_deep</span>, newdata <span class="op">=</span> <span class="va">df</span><span class="op">)</span></span>
 <span><span class="va">px1</span></span>
 <span><span class="co">#&gt; &lt;proximity&gt; 60 x 60 </span></span>
 <span><span class="co">#&gt;   engine : randomForest </span></span>
@@ -132,7 +132,7 @@ because a pair that was never jointly out of bag has no proximity to
 correlate. The test uses what is defined and reports how much that
 was.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">oob</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">rf_deep</span>, newdata <span class="op">=</span> <span class="va">df</span>, type <span class="op">=</span> <span class="st">"oob"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">oob</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">rf_deep</span>, newdata <span class="op">=</span> <span class="va">df</span>, type <span class="op">=</span> <span class="st">"oob"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/mantel_test.html">mantel_test</a></span><span class="op">(</span><span class="va">px1</span>, <span class="va">oob</span>, n_perm <span class="op">=</span> <span class="fl">999</span><span class="op">)</span><span class="op">$</span><span class="va">parameter</span></span>
 <span><span class="co">#&gt;        pairs permutations </span></span>
 <span><span class="co">#&gt;         1770          999</span></span></code></pre></div>
@@ -304,7 +304,7 @@ proximity was refused in every one of 300 replicates; at 200 trees it
 was refused in none.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">small</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">df</span>, ntree <span class="op">=</span> <span class="fl">15</span>, keep.inbag <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/permanova.html">permanova</a></span><span class="op">(</span><span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">small</span>, newdata <span class="op">=</span> <span class="va">df</span>, type <span class="op">=</span> <span class="st">"oob"</span><span class="op">)</span>, <span class="op">~</span> <span class="va">Species</span>, data <span class="op">=</span> <span class="va">df</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/permanova.html">permanova</a></span><span class="op">(</span><span class="fu"><a href="../reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">small</span>, newdata <span class="op">=</span> <span class="va">df</span>, type <span class="op">=</span> <span class="st">"oob"</span><span class="op">)</span>, <span class="op">~</span> <span class="va">Species</span>, data <span class="op">=</span> <span class="va">df</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> `px` leaves 236 of its 1770 pairs undefined, because the two observations were never jointly out of bag. A sum of squares is a quadratic form over the whole matrix, so unlike a correlation it cannot be taken over the pairs that are defined. Grow more trees, or use the in-bag proximity.</span></span></code></pre></div>
 </div>
@@ -316,8 +316,8 @@ was refused in none.</p>
 all of it: <code>e2tree</code> approximates a forest with a single tree,
 and whether that tree preserves the forest’s view of the data is exactly
 a question about two proximity matrices. That comparison needs a
-<code><a href="../reference/proximity.html">proximity()</a></code> method for <code>e2tree</code> objects, which
-does not exist yet.</p>
+<code><a href="../reference/as_proximity.html">as_proximity()</a></code> method for <code>e2tree</code> objects,
+which does not exist yet.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

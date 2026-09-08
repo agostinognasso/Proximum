@@ -102,12 +102,12 @@ shallow <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
                                       ntree = 100, maxnodes = 4)
 deep <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
                                    ntree = 100)
-protest(proximity(shallow, newdata = iris[rows, ]),
-        proximity(deep, newdata = iris[rows, ]), n_perm = 99)
+protest(as_proximity(shallow, newdata = iris[rows, ]),
+        as_proximity(deep, newdata = iris[rows, ]), n_perm = 99)
 #> 
 #>  Procrustes correlation (PROTEST, 2 dimensions, 99 permutations)
 #> 
-#> data:  proximity(shallow, newdata = iris[rows, ]) and proximity(deep, newdata = iris[rows, ])
+#> data:  as_proximity(shallow, newdata = iris[rows, ]) and as_proximity(deep, newdata = iris[rows, ])
 #> r = 0.99914, dimensions = 2, permutations = 99, p-value = 0.01
 #> alternative hypothesis: greater
 #> 

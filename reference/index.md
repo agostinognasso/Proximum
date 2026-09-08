@@ -10,6 +10,10 @@
   : Densify a sparse proximity matrix
 - [`as_dissimilarity()`](as_dissimilarity.md) : Transform a proximity
   into a dissimilarity
+- [`as_proximity()`](as_proximity.md)
+  [`print(`*`<proximity>`*`)`](as_proximity.md)
+  [`as.matrix(`*`<proximity>`*`)`](as_proximity.md) : Proximity matrix
+  of a tree ensemble
 - [`autoplot(`*`<proximity>`*`)`](autoplot.proximity.md)
   [`autoplot(`*`<proximity_sparse>`*`)`](autoplot.proximity.md)
   [`autoplot(`*`<proximity_nystrom>`*`)`](autoplot.proximity.md)
@@ -24,6 +28,7 @@
   implies
 - [`is_euclidean()`](is_euclidean.md) : Is a dissimilarity matrix
   Euclidean?
+- [`loans`](loans.md) : A synthetic consumer loan portfolio
 - [`make_psd()`](make_psd.md) : Repair an indefinite proximity matrix
 - [`mantel_test()`](mantel_test.md) : Mantel test between two proximity
   matrices
@@ -37,10 +42,6 @@
   by a proximity matrix
 - [`protest()`](protest.md) : Procrustes comparison of two proximity
   matrices
-- [`proximity()`](proximity.md)
-  [`print(`*`<proximity>`*`)`](proximity.md)
-  [`as.matrix(`*`<proximity>`*`)`](proximity.md) : Proximity matrix of a
-  tree ensemble
 - [`sparsify()`](sparsify.md)
   [`print(`*`<proximity_sparse>`*`)`](sparsify.md) : Sparse
   representation of a proximity matrix

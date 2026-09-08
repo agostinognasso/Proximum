@@ -94,7 +94,7 @@ as a by-product, handed back on request and otherwise ignored.
 <span>  <span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">iris</span>, ntree <span class="op">=</span> <span class="fl">200</span>, keep.inbag <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">px</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">rf</span>, newdata <span class="op">=</span> <span class="va">iris</span><span class="op">)</span></span>
+<span><span class="va">px</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">rf</span>, newdata <span class="op">=</span> <span class="va">iris</span><span class="op">)</span></span>
 <span><span class="va">px</span></span>
 <span><span class="co">#&gt; &lt;proximity&gt; 150 x 150 </span></span>
 <span><span class="co">#&gt;   engine : randomForest </span></span>
@@ -112,7 +112,7 @@ from the call and refuses to relabel the matrix behind your back:</p>
 <code class="sourceCode R"><span><span class="va">rf_stored</span> <span class="op">&lt;-</span> <span class="fu">randomForest</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span></span>
 <span>  <span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">iris</span>, ntree <span class="op">=</span> <span class="fl">50</span>, proximity <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">rf_stored</span><span class="op">)</span> <span class="co"># asks for in-bag; the forest has out-of-bag</span></span>
+<span><span class="fu"><a href="../reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">rf_stored</span><span class="op">)</span> <span class="co"># asks for in-bag; the forest has out-of-bag</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> The forest stores an out-of-bag proximity matrix, but `type = "inbag"` was requested. Pass `newdata` so that the matrix can be recomputed.</span></span></code></pre></div>
 </div>
@@ -151,7 +151,7 @@ them correctly, which inflates the proximity of same-class pairs.
 Restricting the average to the trees for which both observations are
 out-of-bag removes that bias.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">px_oob</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">rf</span>, newdata <span class="op">=</span> <span class="va">iris</span>, type <span class="op">=</span> <span class="st">"oob"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">px_oob</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">rf</span>, newdata <span class="op">=</span> <span class="va">iris</span>, type <span class="op">=</span> <span class="st">"oob"</span><span class="op">)</span></span>
 <span><span class="va">px_oob</span></span>
 <span><span class="co">#&gt; &lt;proximity&gt; 150 x 150 </span></span>
 <span><span class="co">#&gt;   engine : randomForest </span></span>
@@ -171,7 +171,7 @@ different statement from “the pair is maximally dissimilar”.</p>
 <span><span class="va">small</span> <span class="op">&lt;-</span> <span class="fu">randomForest</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span></span>
 <span>  <span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">iris</span>, ntree <span class="op">=</span> <span class="fl">3</span>, keep.inbag <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">small</span>, newdata <span class="op">=</span> <span class="va">iris</span>, type <span class="op">=</span> <span class="st">"oob"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="fu"><a href="../reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">small</span>, newdata <span class="op">=</span> <span class="va">iris</span>, type <span class="op">=</span> <span class="st">"oob"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 14668</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -256,7 +256,7 @@ with the same definitions and the same out-of-bag handling:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">rg</span> <span class="op">&lt;-</span> <span class="fu">ranger</span><span class="fu">::</span><span class="fu"><a href="http://imbs-hl.github.io/ranger/reference/ranger.html" class="external-link">ranger</a></span><span class="op">(</span><span class="va">Species</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">iris</span>, num.trees <span class="op">=</span> <span class="fl">200</span>, keep.inbag <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/proximity.html">proximity</a></span><span class="op">(</span><span class="va">rg</span>, newdata <span class="op">=</span> <span class="va">iris</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">rg</span>, newdata <span class="op">=</span> <span class="va">iris</span><span class="op">)</span></span>
 <span><span class="co">#&gt; &lt;proximity&gt; 150 x 150 </span></span>
 <span><span class="co">#&gt;   engine : ranger </span></span>
 <span><span class="co">#&gt;   trees  : 200 </span></span>

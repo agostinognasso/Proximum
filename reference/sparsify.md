@@ -83,7 +83,7 @@ get the dense matrix back.
 ``` r
 set.seed(1)
 rf <- randomForest::randomForest(Species ~ ., data = iris, ntree = 200)
-px <- proximity(rf, newdata = iris)
+px <- as_proximity(rf, newdata = iris)
 sparsify(px, threshold = 0.05)
 #> <proximity_sparse> 150 x 150 
 #>   engine   : randomForest 

@@ -23,7 +23,7 @@ y <- factor(ifelse(X$X1 + X$X2 + rnorm(n) > 0, "a", "b"))
 training <- cbind(X, y = y)
 
 forest <- randomForest(y ~ ., data = training, ntree = 500)
-px <- proximity(forest, newdata = training)
+px <- as_proximity(forest, newdata = training)
 format(object.size(px), units = "auto")
 #> [1] "2.8 Mb"
 ```
@@ -253,7 +253,7 @@ came from:
 ``` r
 
 replicates <- lapply(1:4, function(i) {
-  proximity(randomForest(y ~ ., data = training, ntree = 250), newdata = training)
+  as_proximity(randomForest(y ~ ., data = training, ntree = 250), newdata = training)
 })
 agreement <- stability(replicates)
 agreement

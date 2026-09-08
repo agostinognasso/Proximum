@@ -89,12 +89,12 @@ shallow <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
                                       ntree = 100, maxnodes = 4)
 deep <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
                                    ntree = 100)
-mantel_test(proximity(shallow, newdata = iris[rows, ]),
-            proximity(deep, newdata = iris[rows, ]), n_perm = 99)
+mantel_test(as_proximity(shallow, newdata = iris[rows, ]),
+            as_proximity(deep, newdata = iris[rows, ]), n_perm = 99)
 #> 
 #>  Mantel test (pearson, 99 permutations of the observations)
 #> 
-#> data:  proximity(shallow, newdata = iris[rows, ]) and proximity(deep, newdata = iris[rows, ])
+#> data:  as_proximity(shallow, newdata = iris[rows, ]) and as_proximity(deep, newdata = iris[rows, ])
 #> r = 0.9958, pairs = 1770, permutations = 99, p-value = 0.01
 #> alternative hypothesis: greater
 #> 

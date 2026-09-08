@@ -25,7 +25,7 @@ rf <- randomForest::randomForest(
   Species ~ ., data = iris, ntree = 200, keep.inbag = TRUE
 )
 
-px <- proximity(rf, newdata = iris)
+px <- as_proximity(rf, newdata = iris)
 px
 #> <proximity> 150 x 150 
 #>   engine : randomForest 
@@ -48,7 +48,7 @@ matrix behind your back:
 rf_stored <- randomForest::randomForest(
   Species ~ ., data = iris, ntree = 50, proximity = TRUE
 )
-proximity(rf_stored) # asks for in-bag; the forest has out-of-bag
+as_proximity(rf_stored) # asks for in-bag; the forest has out-of-bag
 #> Error:
 #> ! The forest stores an out-of-bag proximity matrix, but `type = "inbag"` was requested. Pass `newdata` so that the matrix can be recomputed.
 ```
@@ -89,7 +89,7 @@ which both observations are out-of-bag removes that bias.
 
 ``` r
 
-px_oob <- proximity(rf, newdata = iris, type = "oob")
+px_oob <- as_proximity(rf, newdata = iris, type = "oob")
 px_oob
 #> <proximity> 150 x 150 
 #>   engine : randomForest 
@@ -117,7 +117,7 @@ set.seed(1)
 small <- randomForest::randomForest(
   Species ~ ., data = iris, ntree = 3, keep.inbag = TRUE
 )
-sum(is.na(proximity(small, newdata = iris, type = "oob")))
+sum(is.na(as_proximity(small, newdata = iris, type = "oob")))
 #> [1] 14668
 ```
 
@@ -214,7 +214,7 @@ definitions and the same out-of-bag handling:
 
 set.seed(1)
 rg <- ranger::ranger(Species ~ ., data = iris, num.trees = 200, keep.inbag = TRUE)
-proximity(rg, newdata = iris)
+as_proximity(rg, newdata = iris)
 #> <proximity> 150 x 150 
 #>   engine : ranger 
 #>   trees  : 200 

@@ -28,8 +28,8 @@ rf_shallow <- randomForest(Species ~ ., data = df, ntree = 300, maxnodes = 4,
 set.seed(3)
 rf_deep <- randomForest(Species ~ ., data = df, ntree = 300, keep.inbag = TRUE)
 
-px1 <- proximity(rf_shallow, newdata = df)
-px2 <- proximity(rf_deep, newdata = df)
+px1 <- as_proximity(rf_shallow, newdata = df)
+px2 <- as_proximity(rf_deep, newdata = df)
 px1
 #> <proximity> 60 x 60 
 #>   engine : randomForest 
@@ -67,7 +67,7 @@ test uses what is defined and reports how much that was.
 
 ``` r
 
-oob <- proximity(rf_deep, newdata = df, type = "oob")
+oob <- as_proximity(rf_deep, newdata = df, type = "oob")
 mantel_test(px1, oob, n_perm = 999)$parameter
 #>        pairs permutations 
 #>         1770          999
@@ -244,7 +244,7 @@ every one of 300 replicates; at 200 trees it was refused in none.
 ``` r
 
 small <- randomForest(Species ~ ., data = df, ntree = 15, keep.inbag = TRUE)
-permanova(proximity(small, newdata = df, type = "oob"), ~ Species, data = df)
+permanova(as_proximity(small, newdata = df, type = "oob"), ~ Species, data = df)
 #> Error:
 #> ! `px` leaves 236 of its 1770 pairs undefined, because the two observations were never jointly out of bag. A sum of squares is a quadratic form over the whole matrix, so unlike a correlation it cannot be taken over the pairs that are defined. Grow more trees, or use the in-bag proximity.
 ```
@@ -255,5 +255,5 @@ Phase F2 is complete. What is not is the motivating case underneath all
 of it: `e2tree` approximates a forest with a single tree, and whether
 that tree preserves the forest’s view of the data is exactly a question
 about two proximity matrices. That comparison needs a
-[`proximity()`](../reference/proximity.md) method for `e2tree` objects,
-which does not exist yet.
+[`as_proximity()`](../reference/as_proximity.md) method for `e2tree`
+objects, which does not exist yet.

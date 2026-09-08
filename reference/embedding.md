@@ -98,7 +98,7 @@ comes out of an \\r \times r\\ decomposition of the stored factor, at
 ``` r
 set.seed(1)
 rf <- randomForest::randomForest(Species ~ ., data = iris, ntree = 200)
-px <- proximity(rf, newdata = iris)
+px <- as_proximity(rf, newdata = iris)
 head(embedding(px, k = 2))
 #>            [,1]       [,2]
 #> [1,] -0.5468575 0.01609983
