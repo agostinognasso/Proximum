@@ -12,11 +12,12 @@ Proximum 1.1.0. This is a new submission: the package is not yet on CRAN.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
+0 errors | 0 warnings | 0 notes, on all six GitHub Actions cells above.
 
-The one note seen locally is `checking HTML version of manual`, which reports
-that `tidy` is not installed on the checking machine. It is a property of that
-machine rather than of the package.
+Locally the same check reports one note, `checking HTML version of manual`,
+which says that HTML Tidy is not installed on this machine. It is a property of
+the machine rather than of the package, and it does not appear on any of the
+cells above.
 
 ## Not run
 
@@ -28,6 +29,9 @@ would have covered is in the GitHub Actions matrix above instead.
 
 * The package name is capitalised. It is a proper noun rather than a word, and
   no CRAN package differs from it only in case.
+* A spell checker run over the Description flags `Nystrom` and `ggplot2`. Both
+  are correct. `Nystrom` is the surname in the Nystrom method, written without
+  the umlaut so that the sources stay ASCII; `ggplot2` is a package name.
 * `inst/simulations/` ships five scripts that are not run at check time and are
   not needed to use the package. They are the provenance of every quantitative
   claim in the documentation: no number appears in a help page or a vignette
