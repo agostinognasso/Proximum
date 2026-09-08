@@ -88,19 +88,44 @@ Raise it when the picture is a hairball.
 
 ## What the views draw from the random stream
 
-The heatmap and the network both draw from it, and both move with it.
-The layout and the community search are randomised outright. The
-seriation is randomised by the data it is given: a proximity is \\k/B\\,
-so it takes at most \\B + 1\\ distinct values however many pairs there
-are, and on the 150 irises of the example there are 197 distinct
-dissimilarities across 11,175 pairs. The ordering breaks that many ties
-at random and moves with the seed; on the same matrix with the ties
-broken by hand it stops moving and stops drawing from the stream at all.
+Both of them draw from it. The layout and the community search of the
+network are randomised outright. The seriation of the heatmap is
+randomised by the matrix it is given, which is less obvious and was
+measured the wrong way round first: a proximity is \\k/B\\, so it takes
+at most \\B + 1\\ distinct values however many pairs it has. Over
+eighteen cells at two sample sizes and three ensemble sizes, the
+dissimilarity took 43 distinct values across 19,900 pairs at 50 trees
+and 370 across 319,600 at 500. The ordering breaks the rest at random:
+it drew from the stream in seventeen of the eighteen and came back
+different under a second seed in seven. With the ties separated by a
+jitter below \\1/B\\ it came back the same in all eighteen, though it
+still drew from the stream.
 
 Both views put back the stream they found, which is what keeps drawing a
-plot from moving the permutation tests around it. What they cannot do is
-make the picture independent of the state they were called in, so seed
+plot from moving the permutation tests around it. What neither can do is
+make the picture independent of the state it was called in, so seed
 before the call when the figure has to come back the same.
+
+## What the heatmap costs
+
+It forms a data frame of \\n^2\\ rows, the one thing in this package
+that is quadratic in the sample size on purpose. Median of three draws,
+forests of 200 trees:
+
+|  |  |  |  |  |  |
+|----|----|----|----|----|----|
+|  | **n = 200** | **400** | **800** | **1600** | **3200** |
+| the seriation, seconds | 0.06 | 0.07 | 0.08 | 0.14 | 0.46 |
+| [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html) in all, seconds | 0.08 | 0.07 | 0.10 | 0.21 | 0.78 |
+| drawing it, seconds | 0.02 | 0.06 | 0.25 | 0.92 | 3.03 |
+| the object, MB | 1.1 | 2.9 | 10.2 | 39.5 | 156.7 |
+
+The seriation is not what costs, which is worth knowing because it is
+the part that looks expensive. The drawing is, and it grows as \\n^2\\
+with the matrix. At n = 3200 the whole call is under a second and the
+object is 157 MB, so the view outlasts the point at which the matrix
+itself becomes the problem, and what runs out first is the page: ten
+million cells show a block structure and nothing finer.
 
 ## The view that could not be drawn
 
