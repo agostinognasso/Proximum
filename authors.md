@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/agostinognasso/Proximum/blob/v1.1.0/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/agostinognasso/Proximum/blob/main/DESCRIPTION)
 
 Gnasso A (2026). *Proximum: Statistical Analysis of Ensemble Proximity
 Matrices*. R package version 1.1.0,
