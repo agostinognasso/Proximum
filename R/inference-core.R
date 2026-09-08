@@ -58,6 +58,16 @@ reject_lossy_storage <- function(x, arg) {
       call. = FALSE
     )
   }
+  if (inherits(x, "proximity_stream")) {
+    stop(
+      "`", arg, "` holds a streaming proximity, which has no matrix to read: ",
+      "it holds the leaf indicator and manufactures the entries a block at a ",
+      "time. `mantel_test()`, `cka()` and `rv_coefficient()` take it as it ",
+      "is. Everything else in the package needs the whole matrix at once, ",
+      "and `as.matrix()` builds it deliberately.",
+      call. = FALSE
+    )
+  }
   if (inherits(x, "proximity_nystrom")) {
     stop(
       "`", arg, "` holds a Nystrom approximation, which is stored as a factor ",
@@ -82,7 +92,8 @@ reject_lossy_storage <- function(x, arg) {
 #' @return A single integer.
 #' @noRd
 n_observations <- function(px, arg) {
-  if (inherits(px, c("proximity_nystrom", "proximity_sparse"))) {
+  if (inherits(px, c("proximity_nystrom", "proximity_sparse",
+                     "proximity_stream"))) {
     return(px$n)
   }
   NROW(px)

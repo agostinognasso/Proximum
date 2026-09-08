@@ -19,8 +19,7 @@ sizes, so the matrix, not the model, is what makes the method unusable. This is
 not a hypothetical: it is the wall the `e2tree` work hit on the Fannie Mae and
 HMDA data.
 
-Two ways round it are implemented, and they give up different things. A third
-is not, and is described at the end for what it is.
+Three ways round it are implemented, and they give up different things.
 
 ```{r setup}
 library(Proximum)
@@ -198,13 +197,83 @@ autoplot(agreement)
 |---|---|---|
 | $\le 5{,}000$ | Dense, exact | Nothing given up |
 | $5{,}000$ to $50{,}000$ | Sparse for storage, dense for the statistics | Small proximities lost, memory spent again on use |
-| $> 50{,}000$ | Nystrom, for the geometry | Rank-$m$ approximation, no pairwise statistics |
+| $> 50{,}000$, geometry wanted | Nystrom | Rank-$m$ approximation, no pairwise statistics |
+| $> 50{,}000$, a scalar wanted | Streaming | Exact, but time in place of memory |
 
-## Not implemented: streaming statistics
+## Streaming: never allocate it at all
 
 When the quantity of interest is a scalar, a Mantel correlation or a CKA, the
-matrix could in principle be traversed in blocks and discarded, with the
-statistic accumulated as it goes and the full $n \times n$ object never
-allocated. `mantel_test()` has no `streaming` argument and this paragraph is
-the whole of the feature. It is written down here so that the shape of it is
-fixed before anything is built, not to suggest that anything has been.
+matrix does not have to exist. It has to be *traversed*: every entry is needed
+once, and nothing needs two of them at the same time. `proximity_stream()`
+holds what the matrix is made of instead of the matrix, and the statistics
+manufacture it a block of rows at a time.
+
+```{r stream}
+set.seed(2)
+shallow <- randomForest(y ~ ., data = training, ntree = 500, maxnodes = 8)
+
+streamed <- proximity_stream(forest, training)
+streamed_shallow <- proximity_stream(shallow, training)
+streamed
+```
+
+Read the last line before going further: at $n = 600$ with 500 trees this
+stream holds *more* than the matrix it stands for. The reason is in the next
+section, and the object reports it rather than letting you assume otherwise.
+
+The answer is the dense answer. Across the cells of
+`inst/simulations/streaming-cost.R` the two paths agreed to within $1.8 \times
+10^{-13}$ on the statistic, on every one of the permuted statistics, and on the
+count of usable pairs.
+
+```{r stream-agrees}
+c(streamed = cka(streamed, streamed_shallow),
+  dense    = cka(px, as_proximity(shallow, newdata = training)))
+```
+
+### The shape this feature was promised in was wrong
+
+Earlier versions of this vignette said that `mantel_test()` would gain a
+`streaming` argument. It cannot have one. `mantel_test()` takes a `proximity`,
+and a `proximity` is a matrix that has already been built; a matrix that has
+already been built cannot be traversed *instead of* built. The saving is only
+available at the moment the object is constructed, so it belongs to the type of
+the input and not to a flag on the function. That is why the feature arrived as
+a constructor rather than as an argument.
+
+### What it costs, which is not nothing
+
+Streaming buys memory with time, and the exchange rate is worse than it looks.
+
+The stored object is $O(nB)$ against the matrix's $O(n^2)$, but $O$ hides the
+constants, and below a certain size the stream is the *larger* object. Measured
+across fifteen cells, the leaf indicator costs 13.1 bytes per observation per
+tree, so the two are equal at $n \approx 1.64B$ and the stream is bigger below
+it: at $n = 100$ with 500 trees it holds eight times what the matrix would. It
+was the larger object in 8 of those 15 cells. `print()` shows both numbers, so
+this is checkable rather than something to reason about.
+
+Above the crossover the saving grows linearly, and at the sizes this vignette
+is about it is the whole game: carrying the measured constant out to
+$n = 100{,}000$ with 500 trees puts the indicator at some 655 MB where the
+matrix would need 80 GB.
+
+The time is the other half. The dense path builds the matrix once and then
+indexes it; the streaming path manufactures every entry each time it wants one,
+and a permutation test wants all of them once per permutation. On the same
+grid the streamed alignment took up to 6 times the dense one and the streamed
+Mantel test up to 12.8 times, which at $n = 800$ with 200 trees was 0.089
+seconds per permutation. `n_perm` is therefore the knob that decides whether
+the answer arrives at all, and the block size is not: the same alignment took
+2.09 seconds a row at a time and 0.069 seconds in one block, a factor of 30,
+for an answer that agreed to $2 \times 10^{-13}$ throughout. Blocks are for
+fitting in memory. The default divides a 64 MB budget by $n$.
+
+### Two things it refuses
+
+`method = "spearman"` and the partial variant both error rather than
+approximate. A Spearman correlation ranks the pairs against each other, and a
+rank is a statement about every pair at once, so it cannot be accumulated from
+blocks that have been thrown away. The partial variant needs the regression
+fitted before the residuals can be correlated, which is two traversals and a
+permutation carried through both. Neither is built, and both say so.

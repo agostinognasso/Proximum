@@ -1,6 +1,6 @@
 Package: Proximum
 Title: Statistical Analysis of Ensemble Proximity Matrices
-Version: 1.0.0
+Version: 1.1.0
 Authors@R:
     person(given = "Agostino",
            family = "Gnasso",
@@ -14,8 +14,9 @@ Description: Treats the proximity matrices produced by tree ensembles as
     diagnostics, corrections that make an indefinite proximity usable as a
     kernel, and permutation inference for comparing two proximity matrices
     or partitioning one across the terms of a design. Also provides a
-    Nystrom approximation and a thresholded sparse representation for
-    samples too large to hold the matrix, measures how far the proximity
+    Nystrom approximation, a thresholded sparse representation and a
+    streaming form that never allocates the matrix at all, for samples too
+    large to hold it, measures how far the proximity
     moves between replicates of the ensemble, and draws each object
     through 'ggplot2': the seriated matrix, the configuration it implies,
     and the thresholded graph with its communities.

@@ -7,7 +7,7 @@
 
 [![R-CMD-check](https://github.com/agostinognasso/Proximum/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/agostinognasso/Proximum/actions/workflows/R-CMD-check.yaml)
 [![test-coverage](https://github.com/agostinognasso/Proximum/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/agostinognasso/Proximum/actions/workflows/test-coverage.yaml)
-[![coverage](https://img.shields.io/badge/coverage-%E2%89%A595%25-brightgreen)](https://github.com/agostinognasso/Proximum/actions/workflows/test-coverage.yaml)
+[![coverage](https://img.shields.io/badge/coverage-%E2%89%A596%25-brightgreen)](https://github.com/agostinognasso/Proximum/actions/workflows/test-coverage.yaml)
 [![R package
 version](https://img.shields.io/github/r-package/v/agostinognasso/Proximum?label=version)](https://github.com/agostinognasso/Proximum/blob/main/DESCRIPTION)
 [![License:
@@ -487,18 +487,19 @@ repair that happens to you.
 
 ## Status
 
-Version 1.0.0, and not yet on CRAN. The four phases of the roadmap are
-complete and the interface is settled: extraction from `randomForest`,
-`ranger` and `e2tree`, the transforms and the metric diagnostics, the
-positive semi-definite repair, the inference layer, the scalability and
-stability layers, and the plots.
+Version 1.1.0, and not yet on CRAN. The roadmap is complete and the
+interface is settled: extraction from `randomForest`, `ranger` and
+`e2tree`, the transforms and the metric diagnostics, the positive
+semi-definite repair, the inference layer, the scalability and stability
+layers, the plots, and the streaming layer.
 
 The `stable` badge is a statement about the interface rather than about
 the number of users. `as_proximity()` was the last name to move, and it
 moved so that this one would not have to; from here a breaking change
-goes through a deprecation cycle. What is declared and deliberately not
-provided is the `streaming` argument that `vignette("large-n")`
-describes and says so about.
+goes through a deprecation cycle. Everything 1.1.0 added is additive:
+`proximity_stream()` is a new constructor and `block_size` a new
+argument with a default, so nothing that ran under 1.0.0 runs
+differently.
 
 | Phase | Content | State |
 |----|----|----|
@@ -506,7 +507,8 @@ describes and says so about.
 | F2 | `mantel_test()`, `cka()`, `rv_coefficient()`, `permanova()`, `protest()` | done |
 | F3 | `sparsify()`, `nystrom()`, `embedding()`, `stability()`, `n_trees_required()` | done |
 | F4 | `autoplot()`, the vignettes, the `loans` data | done |
-| F5 | CRAN, JSS paper | not started |
+| F5 | `proximity_stream()`, streamed `mantel_test()` and `cka()` | done |
+| F6 | CRAN, JSS paper | not started |
 
 ## Related work
 

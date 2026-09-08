@@ -9,12 +9,13 @@ mantel_test(
   px2,
   pxz = NULL,
   n_perm = 999,
-  method = c("pearson", "spearman")
+  method = c("pearson", "spearman"),
+  block_size = NULL
 )
 }
 \arguments{
-\item{px1, px2}{\code{proximity} objects, or symmetric numeric matrices, on the
-same \code{n} observations.}
+\item{px1, px2}{\code{proximity} objects, symmetric numeric matrices, or
+\code{\link[=proximity_stream]{proximity_stream()}} objects, on the same \code{n} observations.}
 
 \item{pxz}{Optional third matrix to condition on. When supplied, the
 partial Mantel statistic is computed.}
@@ -22,6 +23,11 @@ partial Mantel statistic is computed.}
 \item{n_perm}{Number of permutations of the rows and columns.}
 
 \item{method}{Correlation coefficient, \code{"pearson"} or \code{"spearman"}.}
+
+\item{block_size}{Rows of the proximity to manufacture at a time, when
+\code{px1} and \code{px2} are \code{\link[=proximity_stream]{proximity_stream()}} objects. Ignored otherwise, since
+a matrix that has already been allocated has nothing to gain from being
+read in pieces. The default divides a 64 MB budget by the sample size.}
 }
 \value{
 An object of class \code{htest}. The number of usable pairs and the
@@ -65,6 +71,18 @@ of \code{px1} and of \code{px2} after each has been regressed on \code{pxz}. It 
 different question from the plain test: whether the two matrices still agree
 once whatever they both share with the third is taken out. The permutation
 is unchanged.
+}
+
+\section{Streaming}{
+
+Given two \code{\link[=proximity_stream]{proximity_stream()}} objects the test runs without allocating
+either matrix, manufacturing \code{block_size} rows at a time and accumulating
+the six sums a Pearson correlation is a function of. The result is the same
+to floating point. Two things are not available on that path: \code{method = "spearman"}, because a rank is a statement about every other pair and cannot
+be accumulated from blocks that have been discarded, and the partial
+variant, which needs two traversals. Both refuse rather than approximate.
+Note that the permutations dominate the cost and are unaffected by
+streaming: the null is \code{n_perm} further traversals of the same matrix.
 }
 
 \examples{

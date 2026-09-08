@@ -96,24 +96,7 @@ as_proximity.randomForest <- function(object,
     )
   }
 
-  inbag <- NULL
-  if (type == "oob") {
-    if (is.null(object$inbag)) {
-      stop(
-        "`type = \"oob\"` requires a forest fitted with `keep.inbag = TRUE`.",
-        call. = FALSE
-      )
-    }
-    if (nrow(object$inbag) != nrow(newdata)) {
-      stop(
-        "`type = \"oob\"` is only defined on the training data: `newdata` has ",
-        nrow(newdata), " rows but the forest was fitted on ",
-        nrow(object$inbag), ".",
-        call. = FALSE
-      )
-    }
-    inbag <- object$inbag
-  }
+  inbag <- if (type == "oob") ensemble_inbag(object, nrow(newdata)) else NULL
 
   nodes <- terminal_nodes(object, newdata)
   P <- proximity_from_nodes(nodes, inbag = inbag)
@@ -152,23 +135,7 @@ as_proximity.ranger <- function(object, newdata = NULL,
     )
   }
 
-  inbag <- NULL
-  if (type == "oob") {
-    if (is.null(object$inbag.counts)) {
-      stop(
-        "`type = \"oob\"` requires a forest fitted with `keep.inbag = TRUE`.",
-        call. = FALSE
-      )
-    }
-    inbag <- do.call(cbind, object$inbag.counts)
-    if (nrow(inbag) != nrow(newdata)) {
-      stop(
-        "`type = \"oob\"` is only defined on the training data: `newdata` has ",
-        nrow(newdata), " rows but the forest was fitted on ", nrow(inbag), ".",
-        call. = FALSE
-      )
-    }
-  }
+  inbag <- if (type == "oob") ensemble_inbag(object, nrow(newdata)) else NULL
 
   nodes <- terminal_nodes(object, newdata)
   P <- proximity_from_nodes(nodes, inbag = inbag)
@@ -290,6 +257,44 @@ terminal_nodes <- function(fit, data) {
 ensemble_size <- function(fit) {
   n <- if (inherits(fit, "randomForest")) fit$ntree else fit$num.trees
   as.integer(n)
+}
+
+#' The bootstrap counts an ensemble kept, if it kept them
+#'
+#' The out-of-bag definition needs to know which trees each observation was
+#' held out of, and the two engines spell that differently: `randomForest`
+#' stores an `n` by `B` matrix, `ranger` a list of one vector per tree. Both
+#' spellings, and the two ways of getting them wrong, are written down here
+#' because three call sites now need them and a third copy of the same
+#' branch is a third place for them to drift apart.
+#'
+#' @param fit A fitted tree ensemble.
+#' @param n_rows Rows of the data the proximity is being computed on. The
+#'   out-of-bag definition only means anything on the training rows, so a
+#'   mismatch is an error rather than a recycling rule.
+#' @return An integer matrix, `n` by `B`.
+#' @noRd
+ensemble_inbag <- function(fit, n_rows) {
+  counts <- if (inherits(fit, "randomForest")) {
+    fit$inbag
+  } else {
+    if (is.null(fit$inbag.counts)) NULL else do.call(cbind, fit$inbag.counts)
+  }
+
+  if (is.null(counts)) {
+    stop(
+      "`type = \"oob\"` requires a forest fitted with `keep.inbag = TRUE`.",
+      call. = FALSE
+    )
+  }
+  if (nrow(counts) != n_rows) {
+    stop(
+      "`type = \"oob\"` is only defined on the training data: the data has ",
+      n_rows, " rows but the forest was fitted on ", nrow(counts), ".",
+      call. = FALSE
+    )
+  }
+  counts
 }
 
 #' Construct a proximity object

@@ -30,7 +30,13 @@ jobs:
           # The floor, not the target. Raise it when the package clears the next
           # whole number and stays there; lowering it needs a reason in the
           # commit message.
-          COVERAGE_FLOOR: 95
+          #
+          # 95 -> 96 at 1.1.0. Ninety-six has now been cleared and held over
+          # three measurements: 97.83 at F4, 97.89 at 1.0.0, 97.92 with the
+          # streaming layer in. Ninety-seven has been cleared every time too,
+          # but the rule says "and stays there", and one of those three was
+          # taken before the floor was last considered, so 97 waits.
+          COVERAGE_FLOOR: 96
         run: |
           cov <- covr::package_coverage(
             quiet = FALSE,

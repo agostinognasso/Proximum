@@ -41,7 +41,22 @@
 #' [make_psd()], and the decision about which correction to apply, and what it
 #' costs, stays with you.
 #'
-#' @param px1,px2 `proximity` objects on the same `n` observations.
+#' @section Streaming:
+#' Given two in-bag [proximity_stream()] objects, both are computed without
+#' allocating either matrix. An alignment needs no permutations, so this is a
+#' single traversal and the streamed answer costs about what the dense one
+#' costs while holding `block_size` rows instead of \eqn{n}. The centring is
+#' never applied: it is folded into the accumulation through
+#' \eqn{\langle HAH, HBH \rangle_F = \langle A, B \rangle_F -
+#' \frac{2}{n}(A1)^{\top}(B1) + n^{-2}(1^{\top}A1)(1^{\top}B1)}, which matters
+#' because a doubly centred proximity has no zero left in it and would be
+#' dense at full size.
+#'
+#' @param px1,px2 `proximity` objects, or in-bag [proximity_stream()] objects,
+#'   on the same `n` observations.
+#' @param block_size Rows of the proximity to manufacture at a time, when the
+#'   arguments are streams. Ignored otherwise. The default divides a 64 MB
+#'   budget by the sample size.
 #' @return A single numeric value in \eqn{[0, 1]}.
 #' @examplesIf requireNamespace("randomForest", quietly = TRUE)
 #' set.seed(1)
@@ -55,16 +70,18 @@
 #' @seealso [mantel_test()] for the same comparison with a p-value,
 #'   [make_psd()] for the correction these functions require.
 #' @export
-cka <- function(px1, px2) {
+cka <- function(px1, px2, block_size = NULL) {
   alignment(px1, px2, centre = TRUE,
-            arg1 = deparse(substitute(px1)), arg2 = deparse(substitute(px2)))
+            arg1 = deparse(substitute(px1)), arg2 = deparse(substitute(px2)),
+            block_size = block_size, what = "cka")
 }
 
 #' @rdname cka
 #' @export
-rv_coefficient <- function(px1, px2) {
+rv_coefficient <- function(px1, px2, block_size = NULL) {
   alignment(px1, px2, centre = FALSE,
-            arg1 = deparse(substitute(px1)), arg2 = deparse(substitute(px2)))
+            arg1 = deparse(substitute(px1)), arg2 = deparse(substitute(px2)),
+            block_size = block_size, what = "rv_coefficient")
 }
 
 #' The normalised Frobenius inner product of two matrices
@@ -76,7 +93,32 @@ rv_coefficient <- function(px1, px2) {
 #' @param arg1,arg2 Argument names, for the error messages.
 #' @return A single numeric value.
 #' @noRd
-alignment <- function(px1, px2, centre, arg1, arg2) {
+alignment <- function(px1, px2, centre, arg1, arg2, block_size = NULL,
+                      what = "cka") {
+  if (use_stream_path(px1, px2, what)) {
+    # Checked here rather than left to `require_psd()`, which would send the
+    # user to `make_psd()`. That is the right advice for a matrix and no
+    # advice at all for a stream: the repair is an eigendecomposition, which
+    # needs the object a stream exists in order not to build.
+    for (pair in list(list(px1, "px1"), list(px2, "px2"))) {
+      if (identical(attr(pair[[1]], "prox_type"), "oob")) {
+        stop(
+          "`", pair[[2]], "` is an out-of-bag stream. An alignment sums over ",
+          "every entry and cannot skip the undefined ones the way a ",
+          "correlation can, and the out-of-bag proximity is not a kernel in ",
+          "any case. `make_psd()` is the repair for a matrix and there is no ",
+          "streaming form of it, because the repair is an eigendecomposition ",
+          "of the object the stream exists in order not to build. Use ",
+          "`type = \"inbag\"`, or `mantel_test()`, which uses the pairs that ",
+          "are defined.",
+          call. = FALSE
+        )
+      }
+    }
+    return(stream_alignment(px1, px2, centre,
+                            resolve_block_size(block_size, px1$n)))
+  }
+
   m1 <- as_square_matrix(px1, "px1")
   m2 <- as_square_matrix(px2, "px2")
   check_conformable(m1, m2, "px1", "px2")

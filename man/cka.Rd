@@ -5,12 +5,17 @@
 \alias{rv_coefficient}
 \title{Centered kernel alignment between two proximity matrices}
 \usage{
-cka(px1, px2)
+cka(px1, px2, block_size = NULL)
 
-rv_coefficient(px1, px2)
+rv_coefficient(px1, px2, block_size = NULL)
 }
 \arguments{
-\item{px1, px2}{\code{proximity} objects on the same \code{n} observations.}
+\item{px1, px2}{\code{proximity} objects, or in-bag \code{\link[=proximity_stream]{proximity_stream()}} objects,
+on the same \code{n} observations.}
+
+\item{block_size}{Rows of the proximity to manufacture at a time, when the
+arguments are streams. Ignored otherwise. The default divides a 64 MB
+budget by the sample size.}
 }
 \value{
 A single numeric value in \eqn{[0, 1]}.
@@ -58,6 +63,19 @@ These functions therefore refuse the input and name the repair rather than
 returning a number that looks reasonable. Pass the matrix through
 \code{\link[=make_psd]{make_psd()}}, and the decision about which correction to apply, and what it
 costs, stays with you.
+}
+
+\section{Streaming}{
+
+Given two in-bag \code{\link[=proximity_stream]{proximity_stream()}} objects, both are computed without
+allocating either matrix. An alignment needs no permutations, so this is a
+single traversal and the streamed answer costs about what the dense one
+costs while holding \code{block_size} rows instead of \eqn{n}. The centring is
+never applied: it is folded into the accumulation through
+\eqn{\langle HAH, HBH \rangle_F = \langle A, B \rangle_F -
+\frac{2}{n}(A1)^{\top}(B1) + n^{-2}(1^{\top}A1)(1^{\top}B1)}, which matters
+because a doubly centred proximity has no zero left in it and would be
+dense at full size.
 }
 
 \examples{

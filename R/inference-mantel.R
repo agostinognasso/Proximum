@@ -33,12 +33,27 @@
 #' once whatever they both share with the third is taken out. The permutation
 #' is unchanged.
 #'
-#' @param px1,px2 `proximity` objects, or symmetric numeric matrices, on the
-#'   same `n` observations.
+#' @section Streaming:
+#' Given two [proximity_stream()] objects the test runs without allocating
+#' either matrix, manufacturing `block_size` rows at a time and accumulating
+#' the six sums a Pearson correlation is a function of. The result is the same
+#' to floating point. Two things are not available on that path: `method =
+#' "spearman"`, because a rank is a statement about every other pair and cannot
+#' be accumulated from blocks that have been discarded, and the partial
+#' variant, which needs two traversals. Both refuse rather than approximate.
+#' Note that the permutations dominate the cost and are unaffected by
+#' streaming: the null is `n_perm` further traversals of the same matrix.
+#'
+#' @param px1,px2 `proximity` objects, symmetric numeric matrices, or
+#'   [proximity_stream()] objects, on the same `n` observations.
 #' @param pxz Optional third matrix to condition on. When supplied, the
 #'   partial Mantel statistic is computed.
 #' @param n_perm Number of permutations of the rows and columns.
 #' @param method Correlation coefficient, `"pearson"` or `"spearman"`.
+#' @param block_size Rows of the proximity to manufacture at a time, when
+#'   `px1` and `px2` are [proximity_stream()] objects. Ignored otherwise, since
+#'   a matrix that has already been allocated has nothing to gain from being
+#'   read in pieces. The default divides a 64 MB budget by the sample size.
 #' @return An object of class `htest`. The number of usable pairs and the
 #'   number of permutations are in `parameter`; the permuted statistics are
 #'   kept in `null_distribution`.
@@ -55,13 +70,12 @@
 #'   [make_psd()] when the matrix is to be used as a kernel.
 #' @export
 mantel_test <- function(px1, px2, pxz = NULL, n_perm = 999,
-                        method = c("pearson", "spearman")) {
+                        method = c("pearson", "spearman"),
+                        block_size = NULL) {
   method <- match.arg(method)
   data_name <- paste(deparse(substitute(px1)), "and", deparse(substitute(px2)))
 
-  m1 <- as_square_matrix(px1, "px1")
-  m2 <- as_square_matrix(px2, "px2")
-  check_conformable(m1, m2, "px1", "px2")
+  streaming <- use_stream_path(px1, px2, "mantel_test")
 
   n_perm <- as.integer(n_perm)
   if (is.na(n_perm) || n_perm < 1L) {
@@ -69,6 +83,25 @@ mantel_test <- function(px1, px2, pxz = NULL, n_perm = 999,
          "no null distribution to compare the statistic against.",
          call. = FALSE)
   }
+
+  if (streaming) {
+    if (!is.null(pxz)) {
+      stop(
+        "The partial variant is not available on the streaming path. ",
+        "Residualising on a third matrix needs the regression fitted before ",
+        "the residuals can be correlated, which is two traversals rather ",
+        "than one, and the permutation then has to be carried through both. ",
+        "It is not built. Use the plain test, or `as.matrix()` the streams ",
+        "and take the dense path deliberately.",
+        call. = FALSE
+      )
+    }
+    return(stream_mantel_test(px1, px2, n_perm, method, block_size, data_name))
+  }
+
+  m1 <- as_square_matrix(px1, "px1")
+  m2 <- as_square_matrix(px2, "px2")
+  check_conformable(m1, m2, "px1", "px2")
 
   partial <- !is.null(pxz)
   if (partial) {
