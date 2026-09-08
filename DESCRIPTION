@@ -47,5 +47,6 @@ VignetteBuilder:
 LazyData: true
 Config/testthat/edition: 3
 Encoding: UTF-8
+Language: en-GB
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0

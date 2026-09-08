@@ -4,19 +4,25 @@ Proximum 1.1.0. This is a new submission: the package is not yet on CRAN.
 
 ## Test environments
 
-* local macOS 15.5, R 4.6.0
-* GitHub Actions: ubuntu-latest (release, devel, oldrel-1), macOS-latest
-  (release), windows-latest (release)
-* win-builder (devel and release)
-* R-hub
+* local macOS 15.5, R 4.6.0, `R CMD check --as-cran`
+* GitHub Actions, on every push:
+  * ubuntu-latest, R devel / release / oldrel-1
+  * macOS-latest, R release
+  * windows-latest, R release / devel
 
 ## R CMD check results
 
 0 errors | 0 warnings | 0 notes
 
-The only note seen locally is `checking HTML version of manual`, which reports
-that `tidy` is not installed on the checking machine. It is a property of the
-local environment rather than of the package.
+The one note seen locally is `checking HTML version of manual`, which reports
+that `tidy` is not installed on the checking machine. It is a property of that
+machine rather than of the package.
+
+## Not run
+
+win-builder and R-hub have not been used. The FTP upload win-builder needs is
+refused from the network this was prepared on, and the Windows R-devel cell it
+would have covered is in the GitHub Actions matrix above instead.
 
 ## Notes for the reviewer
 

@@ -21,6 +21,10 @@ jobs:
         config:
           - {os: macos-latest,   r: 'release'}
           - {os: windows-latest, r: 'release'}
+          # Windows on R-devel is what win-builder is normally used for.
+          # Kept here so the cell is covered by infrastructure that runs
+          # on every push rather than by a manual upload before release.
+          - {os: windows-latest, r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,   r: 'release'}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
