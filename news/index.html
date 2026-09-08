@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Proximum</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,9 +40,10 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.0.0.9000" id="proximum-0009000">Proximum 0.0.0.9000<a class="anchor" aria-label="anchor" href="#proximum-0009000"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.0.0" id="proximum-100">Proximum 1.0.0<a class="anchor" aria-label="anchor" href="#proximum-100"></a></h2>
+<p>First release. The four phases of the roadmap are complete and the interface is settled: <code><a href="../reference/as_proximity.html">as_proximity()</a></code> was the last name to move, and it moved so that this one would not have to. Breaking changes from here go through a deprecation cycle, which is what the <code>stable</code> badge is a promise about.</p>
 <div class="section level3">
-<h3 id="new-0-0-0-9000">New<a class="anchor" aria-label="anchor" href="#new-0-0-0-9000"></a></h3>
+<h3 id="new-1-0-0">New<a class="anchor" aria-label="anchor" href="#new-1-0-0"></a></h3>
 <ul><li><p>The <code>proximity()</code> generic is renamed <code><a href="../reference/as_proximity.html">as_proximity()</a></code>. <code>e2tree</code>, the package most likely to be attached alongside this one, exports a <code>proximity()</code> of its own, and two generics of one name mask each other in whichever order the user happened to call <code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code>. The <code>as_</code> prefix also says what the function does: it coerces a fitted ensemble into an object of class <code>proximity</code>, which keeps its name. Nothing was ever released under the old one, so there is no deprecated alias.</p></li>
 <li><p><code><a href="../reference/as_proximity.html">as_proximity()</a></code> gains a method for <code>e2tree</code> fits. An <code>e2tree</code> is one tree, so its proximity is an indicator rather than a proportion, and it is still a Gram matrix over the leaf indicators: positive semi-definite, of rank the number of leaves. This closes a loop. <code>e2tree()</code> takes as its <code>D</code> argument the dissimilarity this package induces, and reading its result back as a proximity makes the explanation comparable with the ensemble it explains, on the same footing, through <code><a href="../reference/mantel_test.html">mantel_test()</a></code>. That is the question <code>e2tree</code> exists to answer and the one thing it cannot ask of itself.</p></li>
 <li><p><code>loans</code> is a new dataset: 2,000 synthetic consumer loans over four origination years, with the outcome, ten predictors, and one protected attribute the model is not allowed to see. It is generated rather than collected, because the public credit panels that can be redistributed have had exactly that attribute stripped out, and the fairness question the case study asks cannot be asked without one. <code>inst/data-raw/loans.R</code> is the specification as code: the default rate is 16.4 per cent and rises from 13.8 per cent in the 2019 vintage to 19.9 in 2022, utilisation carries three times the weight in the last vintage that it carries in the first, and <code>applicant_group</code> shifts the median income by 8,902 and the median score by 29 points while affecting the default probability nowhere.</p></li>
@@ -81,7 +82,7 @@
 <li><p><code><a href="../reference/make_psd.html">make_psd()</a></code> projects an indefinite proximity onto the cone of positive semi-definite matrices, by <code>"clip"</code>, <code>"flip"</code> or <code>"shift"</code>. The out-of-bag proximity is not a kernel, so centered kernel alignment, the RV coefficient and kernel PCA all need this first. The correction is recorded on the object and shown by <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code>.</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="fixed-0-0-0-9000">Fixed<a class="anchor" aria-label="anchor" href="#fixed-0-0-0-9000"></a></h3>
+<h3 id="fixed-1-0-0">Fixed<a class="anchor" aria-label="anchor" href="#fixed-1-0-0"></a></h3>
 <ul><li>
 <code><a href="../reference/as_dissimilarity.html">as_dissimilarity()</a></code>, <code><a href="../reference/make_psd.html">make_psd()</a></code> and <code><a href="../reference/double_centre.html">double_centre()</a></code> reached the new storage classes by coercion or by dispatch and would have densified them without saying so. All three now refuse, through the same guard the inference functions use.</li>
 <li>The error <code><a href="../reference/as_proximity.html">as_proximity()</a></code> raises on an unknown argument said that <code><a href="../reference/sparsify.html">sparsify()</a></code> and <code><a href="../reference/nystrom.html">nystrom()</a></code> were scheduled for a later release. They are in this one, and the message now points at them.</li>
@@ -89,21 +90,21 @@
 <li>The coverage floor in CI is 95 per cent, from 90. The package is at 96.4.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="correctness-0-0-0-9000">Correctness<a class="anchor" aria-label="anchor" href="#correctness-0-0-0-9000"></a></h3>
+<h3 id="correctness-1-0-0">Correctness<a class="anchor" aria-label="anchor" href="#correctness-1-0-0"></a></h3>
 <ul><li><p>The <code>...</code> of <code><a href="../reference/as_proximity.html">as_proximity()</a></code> no longer swallows arguments the method does not have. <code>vignettes/large-n.Rmd</code> sketches a scalability layer with <code>as_proximity(rf, newdata = df, sparse = TRUE, threshold = 0.05)</code>, and against the current code that call returned a dense matrix as though the request had been honoured. It was the one path in the package that answered wrongly rather than failing.</p></li>
 <li><p><code>DESCRIPTION</code> no longer claims the inference, stability, scalability and visualisation layers in the present indicative. It is the text CRAN and every package index display, and four of those layers did not exist. Two now do.</p></li>
 <li><p><code><a href="../reference/as_proximity.html">as_proximity()</a></code> no longer relabels the matrix stored by <code>randomForest</code>. <code><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest()</a></code> declares <code>oob.prox = proximity</code>, so a fit made with <code>proximity = TRUE</code> carries the <em>out-of-bag</em> matrix; the previous code returned it labelled <code>"inbag"</code> whenever <code>type = "inbag"</code> was requested. The type is now recovered from <code>object$call</code>, and the fit is refused when the call does not settle the question or when the stored type is not the one asked for.</p></li>
 <li><p><code><a href="../reference/as_proximity.html">print.proximity()</a></code> counted missing matrix cells and reported them as pairs, so it printed twice the number <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> did. It now counts pairs.</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="performance-0-0-0-9000">Performance<a class="anchor" aria-label="anchor" href="#performance-0-0-0-9000"></a></h3>
+<h3 id="performance-1-0-0">Performance<a class="anchor" aria-label="anchor" href="#performance-1-0-0"></a></h3>
 <ul><li>
 <code><a href="../reference/as_proximity.html">as_proximity()</a></code> computes the leaf co-occurrence as a sparse Gram matrix, <code>P = Z Z'/B</code>, instead of looping over trees. On a forest of 300 trees fitted to 1500 observations, the in-bag proximity went from 13.0 s to 0.16 s. The out-of-bag case is the elementwise quotient of two such products. <code>proximity_from_nodes_reference()</code> keeps the old loop as the yardstick the new engine is tested against.</li>
 <li>
 <code><a href="../reference/double_centre.html">double_centre()</a></code> subtracts row and column means directly rather than forming the centring matrix and multiplying, which drops the cost from <code>O(n^3)</code> to <code>O(n^2)</code> and preserves the dimnames of the input.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="initial-scaffolding-0-0-0-9000">Initial scaffolding<a class="anchor" aria-label="anchor" href="#initial-scaffolding-0-0-0-9000"></a></h3>
+<h3 id="initial-scaffolding-1-0-0">Initial scaffolding<a class="anchor" aria-label="anchor" href="#initial-scaffolding-1-0-0"></a></h3>
 <ul><li>
 <code><a href="../reference/as_proximity.html">as_proximity()</a></code> generic with a method for <code>randomForest</code> fits, supporting the in-bag and out-of-bag definitions. Pairs never jointly out-of-bag are <code>NA</code> rather than <code>0</code>.</li>
 <li>

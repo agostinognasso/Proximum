@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">Proximum</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -400,7 +400,8 @@
 <div class="section level2">
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h2>
-<p>Early development, pre-CRAN. Phases F1 to F4 are done: extraction from <code>randomForest</code>, <code>ranger</code> and <code>e2tree</code>, the transforms and diagnostics, the positive semi-definite repair, the inference layer, the scalability and stability layers, and the plots. What is declared and not provided is the <code>streaming</code> argument that <code><a href="articles/large-n.html">vignette("large-n")</a></code> describes and says so about.</p>
+<p>Version 1.0.0, and not yet on CRAN. The four phases of the roadmap are complete and the interface is settled: extraction from <code>randomForest</code>, <code>ranger</code> and <code>e2tree</code>, the transforms and the metric diagnostics, the positive semi-definite repair, the inference layer, the scalability and stability layers, and the plots.</p>
+<p>The <code>stable</code> badge is a statement about the interface rather than about the number of users. <code><a href="reference/as_proximity.html">as_proximity()</a></code> was the last name to move, and it moved so that this one would not have to; from here a breaking change goes through a deprecation cycle. What is declared and deliberately not provided is the <code>streaming</code> argument that <code><a href="articles/large-n.html">vignette("large-n")</a></code> describes and says so about.</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -515,7 +516,7 @@
 <li><a href="https://github.com/agostinognasso/Proximum/actions/workflows/test-coverage.yaml" class="external-link"><img src="https://img.shields.io/badge/coverage-%E2%89%A595%25-brightgreen" alt="coverage"></a></li>
 <li><a href="https://github.com/agostinognasso/Proximum/blob/main/DESCRIPTION" class="external-link"><img src="https://img.shields.io/github/r-package/v/agostinognasso/Proximum?label=version" alt="R package version"></a></li>
 <li><a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a></li>
-<li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
+<li><a href="https://lifecycle.r-lib.org/articles/stages.html#stable" class="external-link"><img src="https://img.shields.io/badge/lifecycle-stable-brightgreen.svg" alt="Lifecycle: stable"></a></li>
 </ul>
 </div>
 

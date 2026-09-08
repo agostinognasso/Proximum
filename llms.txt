@@ -503,11 +503,17 @@ repair that happens to you.
 
 ## Status
 
-Early development, pre-CRAN. Phases F1 to F4 are done: extraction from
-`randomForest`, `ranger` and `e2tree`, the transforms and diagnostics,
-the positive semi-definite repair, the inference layer, the scalability
-and stability layers, and the plots. What is declared and not provided
-is the `streaming` argument that
+Version 1.0.0, and not yet on CRAN. The four phases of the roadmap are
+complete and the interface is settled: extraction from `randomForest`,
+`ranger` and `e2tree`, the transforms and the metric diagnostics, the
+positive semi-definite repair, the inference layer, the scalability and
+stability layers, and the plots.
+
+The `stable` badge is a statement about the interface rather than about
+the number of users. [`as_proximity()`](reference/as_proximity.md) was
+the last name to move, and it moved so that this one would not have to;
+from here a breaking change goes through a deprecation cycle. What is
+declared and deliberately not provided is the `streaming` argument that
 [`vignette("large-n")`](articles/large-n.md) describes and says so
 about.
 
