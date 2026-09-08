@@ -11,7 +11,7 @@ variant conditions on a third matrix."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">Proximum</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,7 +57,8 @@ variant conditions on a third matrix.</p>
 <span>  <span class="va">px2</span>,</span>
 <span>  pxz <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n_perm <span class="op">=</span> <span class="fl">999</span>,</span>
-<span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pearson"</span>, <span class="st">"spearman"</span><span class="op">)</span></span>
+<span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pearson"</span>, <span class="st">"spearman"</span><span class="op">)</span>,</span>
+<span>  block_size <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -66,8 +67,8 @@ variant conditions on a third matrix.</p>
 
 
 <dl><dt id="arg-px-px-">px1, px2<a class="anchor" aria-label="anchor" href="#arg-px-px-"></a></dt>
-<dd><p><code>proximity</code> objects, or symmetric numeric matrices, on the
-same <code>n</code> observations.</p></dd>
+<dd><p><code>proximity</code> objects, symmetric numeric matrices, or
+<code><a href="proximity_stream.html">proximity_stream()</a></code> objects, on the same <code>n</code> observations.</p></dd>
 
 
 <dt id="arg-pxz">pxz<a class="anchor" aria-label="anchor" href="#arg-pxz"></a></dt>
@@ -81,6 +82,13 @@ partial Mantel statistic is computed.</p></dd>
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
 <dd><p>Correlation coefficient, <code>"pearson"</code> or <code>"spearman"</code>.</p></dd>
+
+
+<dt id="arg-block-size">block_size<a class="anchor" aria-label="anchor" href="#arg-block-size"></a></dt>
+<dd><p>Rows of the proximity to manufacture at a time, when
+<code>px1</code> and <code>px2</code> are <code><a href="proximity_stream.html">proximity_stream()</a></code> objects. Ignored otherwise, since
+a matrix that has already been allocated has nothing to gain from being
+read in pieces. The default divides a 64 MB budget by the sample size.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -124,6 +132,19 @@ of <code>px1</code> and of <code>px2</code> after each has been regressed on <co
 different question from the plain test: whether the two matrices still agree
 once whatever they both share with the third is taken out. The permutation
 is unchanged.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="streaming">Streaming<a class="anchor" aria-label="anchor" href="#streaming"></a></h2>
+
+
+<p>Given two <code><a href="proximity_stream.html">proximity_stream()</a></code> objects the test runs without allocating
+either matrix, manufacturing <code>block_size</code> rows at a time and accumulating
+the six sums a Pearson correlation is a function of. The result is the same
+to floating point. Two things are not available on that path: <code>method = "spearman"</code>, because a rank is a statement about every other pair and cannot
+be accumulated from blocks that have been discarded, and the partial
+variant, which needs two traversals. Both refuse rather than approximate.
+Note that the permutations dominate the cost and are unaffected by
+streaming: the null is <code>n_perm</code> further traversals of the same matrix.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

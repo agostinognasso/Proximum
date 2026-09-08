@@ -10,16 +10,24 @@ multivariate ancestor.
 ## Usage
 
 ``` r
-cka(px1, px2)
+cka(px1, px2, block_size = NULL)
 
-rv_coefficient(px1, px2)
+rv_coefficient(px1, px2, block_size = NULL)
 ```
 
 ## Arguments
 
 - px1, px2:
 
-  `proximity` objects on the same `n` observations.
+  `proximity` objects, or in-bag
+  [`proximity_stream()`](proximity_stream.md) objects, on the same `n`
+  observations.
+
+- block_size:
+
+  Rows of the proximity to manufacture at a time, when the arguments are
+  streams. Ignored otherwise. The default divides a 64 MB budget by the
+  sample size.
 
 ## Value
 
@@ -64,6 +72,18 @@ These functions therefore refuse the input and name the repair rather
 than returning a number that looks reasonable. Pass the matrix through
 [`make_psd()`](make_psd.md), and the decision about which correction to
 apply, and what it costs, stays with you.
+
+## Streaming
+
+Given two in-bag [`proximity_stream()`](proximity_stream.md) objects,
+both are computed without allocating either matrix. An alignment needs
+no permutations, so this is a single traversal and the streamed answer
+costs about what the dense one costs while holding `block_size` rows
+instead of \\n\\. The centring is never applied: it is folded into the
+accumulation through \\\langle HAH, HBH \rangle_F = \langle A, B
+\rangle_F - \frac{2}{n}(A1)^{\top}(B1) +
+n^{-2}(1^{\top}A1)(1^{\top}B1)\\, which matters because a doubly centred
+proximity has no zero left in it and would be dense at full size.
 
 ## See also
 

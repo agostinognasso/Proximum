@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Proximum</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,39 @@
       <small>Source: <a href="https://github.com/agostinognasso/Proximum/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.1.0" id="proximum-110">Proximum 1.1.0<a class="anchor" aria-label="anchor" href="#proximum-110"></a></h2>
+<p>The streaming layer, which the previous release described as declared and deliberately not built. Everything here is additive: nothing that ran under 1.0.0 runs differently.</p>
+<div class="section level3">
+<h3 id="new-1-1-0">New<a class="anchor" aria-label="anchor" href="#new-1-1-0"></a></h3>
+<ul><li>
+<code><a href="../reference/proximity_stream.html">proximity_stream()</a></code> builds an object that holds what a proximity matrix is made of rather than the matrix. <code><a href="../reference/mantel_test.html">mantel_test()</a></code>, <code><a href="../reference/cka.html">cka()</a></code> and <code><a href="../reference/cka.html">rv_coefficient()</a></code> take it and manufacture the matrix a block of rows at a time, accumulating the statistic and discarding each block, so the  object is never allocated. The streamed answer is the dense answer: over the cells of <code>inst/simulations/streaming-cost.R</code> the two agreed to within 1.8e-13 on the statistic, on every permuted statistic, and on the count of usable pairs, in-bag and out-of-bag alike.</li>
+<li>
+<code><a href="../reference/mantel_test.html">mantel_test()</a></code>, <code><a href="../reference/cka.html">cka()</a></code> and <code><a href="../reference/cka.html">rv_coefficient()</a></code> gain a <code>block_size</code> argument, used only when the arguments are streams. The default divides a 64 MB budget by the sample size.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="corrections-to-what-promised-1-1-0">Corrections to what 1.0.0 promised<a class="anchor" aria-label="anchor" href="#corrections-to-what-promised-1-1-0"></a></h3>
+<ul><li>
+<strong>The shape the feature was promised in was wrong.</strong> <code>README</code> and <code><a href="../articles/large-n.html">vignette("large-n")</a></code> said <code><a href="../reference/mantel_test.html">mantel_test()</a></code> would gain a <code>streaming</code> argument. It cannot have one. <code><a href="../reference/mantel_test.html">mantel_test()</a></code> takes a <code>proximity</code>, which is a matrix that has already been built, and a matrix that has already been built cannot be traversed instead of built. The saving exists only at the moment the object is constructed, so it belongs to the type of the input rather than to a flag on the function, and the feature arrived as a constructor.</li>
+<li>
+<strong>The saving is not a saving at every size.</strong> The indicator is  and the matrix , which settles nothing about which is smaller here. Measured over fifteen cells, the indicator costs 13.1 bytes per observation per tree, so the two are equal at  and below that the stream is the <strong>larger</strong> object: it was, in 8 of those 15 cells. <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> shows both figures side by side rather than leaving it to be assumed.</li>
+<li>
+<strong>It is slower, and by more than “not faster” suggests.</strong> The dense path builds the matrix once and indexes it; the streaming path manufactures every entry each time, once per permutation. Measured: up to 6 times the dense cost for an alignment and up to 12.8 times for a Mantel test. The block size is not the lever it looks like either, since the same alignment took 2.09 seconds a row at a time and 0.069 seconds in one block for an answer that agreed to 2e-13.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="refused-rather-than-approximated-1-1-0">Refused rather than approximated<a class="anchor" aria-label="anchor" href="#refused-rather-than-approximated-1-1-0"></a></h3>
+<ul><li>
+<code>method = "spearman"</code> errors on the streaming path. A rank is a statement about every other pair, so it cannot be accumulated from blocks that have been discarded.</li>
+<li>The partial variant errors on the streaming path: residualising needs the regression fitted before the residuals can be correlated, which is two traversals with the permutation carried through both.</li>
+<li>An out-of-bag stream is refused an alignment with a message that does not send the user to <code><a href="../reference/make_psd.html">make_psd()</a></code>, because the repair is an eigendecomposition of the object the stream exists in order not to build.</li>
+<li>A stream paired with an allocated matrix is refused: both describe the same observations, so the memory the stream saves has already been spent.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="internal-1-1-0">Internal<a class="anchor" aria-label="anchor" href="#internal-1-1-0"></a></h3>
+<ul><li>
+<code>ensemble_inbag()</code> collects the two engines’ spellings of the bootstrap counts, which three call sites now need. It replaces two copies of the same branch in <code><a href="../reference/as_proximity.html">as_proximity.randomForest()</a></code> and <code><a href="../reference/as_proximity.html">as_proximity.ranger()</a></code>.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.0.0" id="proximum-100">Proximum 1.0.0<a class="anchor" aria-label="anchor" href="#proximum-100"></a></h2>
 <p>First release. The four phases of the roadmap are complete and the interface is settled: <code><a href="../reference/as_proximity.html">as_proximity()</a></code> was the last name to move, and it moved so that this one would not have to. Breaking changes from here go through a deprecation cycle, which is what the <code>stable</code> badge is a promise about.</p>

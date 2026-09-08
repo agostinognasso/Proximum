@@ -12,7 +12,8 @@ mantel_test(
   px2,
   pxz = NULL,
   n_perm = 999,
-  method = c("pearson", "spearman")
+  method = c("pearson", "spearman"),
+  block_size = NULL
 )
 ```
 
@@ -20,7 +21,8 @@ mantel_test(
 
 - px1, px2:
 
-  `proximity` objects, or symmetric numeric matrices, on the same `n`
+  `proximity` objects, symmetric numeric matrices, or
+  [`proximity_stream()`](proximity_stream.md) objects, on the same `n`
   observations.
 
 - pxz:
@@ -35,6 +37,14 @@ mantel_test(
 - method:
 
   Correlation coefficient, `"pearson"` or `"spearman"`.
+
+- block_size:
+
+  Rows of the proximity to manufacture at a time, when `px1` and `px2`
+  are [`proximity_stream()`](proximity_stream.md) objects. Ignored
+  otherwise, since a matrix that has already been allocated has nothing
+  to gain from being read in pieces. The default divides a 64 MB budget
+  by the sample size.
 
 ## Value
 
@@ -74,6 +84,19 @@ residuals of `px1` and of `px2` after each has been regressed on `pxz`.
 It answers a different question from the plain test: whether the two
 matrices still agree once whatever they both share with the third is
 taken out. The permutation is unchanged.
+
+## Streaming
+
+Given two [`proximity_stream()`](proximity_stream.md) objects the test
+runs without allocating either matrix, manufacturing `block_size` rows
+at a time and accumulating the six sums a Pearson correlation is a
+function of. The result is the same to floating point. Two things are
+not available on that path: `method = "spearman"`, because a rank is a
+statement about every other pair and cannot be accumulated from blocks
+that have been discarded, and the partial variant, which needs two
+traversals. Both refuse rather than approximate. Note that the
+permutations dominate the cost and are unaffected by streaming: the null
+is `n_perm` further traversals of the same matrix.
 
 ## See also
 

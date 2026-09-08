@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Proximum</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,8 +78,8 @@ it is 80 GB. The ensemble happily fits data at both sizes, so the
 matrix, not the model, is what makes the method unusable. This is not a
 hypothetical: it is the wall the <code>e2tree</code> work hit on the
 Fannie Mae and HMDA data.</p>
-<p>Two ways round it are implemented, and they give up different things.
-A third is not, and is described at the end for what it is.</p>
+<p>Three ways round it are implemented, and they give up different
+things.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/agostinognasso/Proximum" class="external-link">Proximum</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.stat.berkeley.edu/~breiman/RandomForests/" class="external-link">randomForest</a></span><span class="op">)</span></span>
@@ -324,25 +324,127 @@ to
 <td>Small proximities lost, memory spent again on use</td>
 </tr>
 <tr class="odd">
-<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>&gt;</mo><mn>50</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">&gt; 50{,}000</annotation></semantics></math></td>
-<td>Nystrom, for the geometry</td>
+<td>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>&gt;</mo><mn>50</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">&gt; 50{,}000</annotation></semantics></math>,
+geometry wanted</td>
+<td>Nystrom</td>
 <td>Rank-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>m</mi><annotation encoding="application/x-tex">m</annotation></semantics></math>
 approximation, no pairwise statistics</td>
+</tr>
+<tr class="even">
+<td>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>&gt;</mo><mn>50</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">&gt; 50{,}000</annotation></semantics></math>,
+a scalar wanted</td>
+<td>Streaming</td>
+<td>Exact, but time in place of memory</td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section level2">
-<h2 id="not-implemented-streaming-statistics">Not implemented: streaming statistics<a class="anchor" aria-label="anchor" href="#not-implemented-streaming-statistics"></a>
+<h2 id="streaming-never-allocate-it-at-all">Streaming: never allocate it at all<a class="anchor" aria-label="anchor" href="#streaming-never-allocate-it-at-all"></a>
 </h2>
 <p>When the quantity of interest is a scalar, a Mantel correlation or a
-CKA, the matrix could in principle be traversed in blocks and discarded,
-with the statistic accumulated as it goes and the full
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>×</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">n \times n</annotation></semantics></math>
-object never allocated. <code><a href="../reference/mantel_test.html">mantel_test()</a></code> has no
-<code>streaming</code> argument and this paragraph is the whole of the
-feature. It is written down here so that the shape of it is fixed before
-anything is built, not to suggest that anything has been.</p>
+CKA, the matrix does not have to exist. It has to be <em>traversed</em>:
+every entry is needed once, and nothing needs two of them at the same
+time. <code><a href="../reference/proximity_stream.html">proximity_stream()</a></code> holds what the matrix is made of
+instead of the matrix, and the statistics manufacture it a block of rows
+at a time.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">shallow</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/randomForest/man/randomForest.html" class="external-link">randomForest</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">.</span>, data <span class="op">=</span> <span class="va">training</span>, ntree <span class="op">=</span> <span class="fl">500</span>, maxnodes <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">streamed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proximity_stream.html">proximity_stream</a></span><span class="op">(</span><span class="va">forest</span>, <span class="va">training</span><span class="op">)</span></span>
+<span><span class="va">streamed_shallow</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/proximity_stream.html">proximity_stream</a></span><span class="op">(</span><span class="va">shallow</span>, <span class="va">training</span><span class="op">)</span></span>
+<span><span class="va">streamed</span></span>
+<span><span class="co">#&gt; &lt;proximity_stream&gt; 600 x 600 </span></span>
+<span><span class="co">#&gt;   engine   : randomForest </span></span>
+<span><span class="co">#&gt;   trees    : 500 </span></span>
+<span><span class="co">#&gt;   type     : inbag </span></span>
+<span><span class="co">#&gt;   stored   : 3.7 Mb against 2.7 Mb dense</span></span></code></pre></div>
+<p>Read the last line before going further: at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>600</mn></mrow><annotation encoding="application/x-tex">n = 600</annotation></semantics></math>
+with 500 trees this stream holds <em>more</em> than the matrix it stands
+for. The reason is in the next section, and the object reports it rather
+than letting you assume otherwise.</p>
+<p>The answer is the dense answer. Across the cells of
+<code>inst/simulations/streaming-cost.R</code> the two paths agreed to
+within
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1.8</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>13</mn></mrow></msup></mrow><annotation encoding="application/x-tex">1.8 \times
+10^{-13}</annotation></semantics></math> on the statistic, on every one
+of the permuted statistics, and on the count of usable pairs.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>streamed <span class="op">=</span> <span class="fu"><a href="../reference/cka.html">cka</a></span><span class="op">(</span><span class="va">streamed</span>, <span class="va">streamed_shallow</span><span class="op">)</span>,</span>
+<span>  dense    <span class="op">=</span> <span class="fu"><a href="../reference/cka.html">cka</a></span><span class="op">(</span><span class="va">px</span>, <span class="fu"><a href="../reference/as_proximity.html">as_proximity</a></span><span class="op">(</span><span class="va">shallow</span>, newdata <span class="op">=</span> <span class="va">training</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  streamed     dense </span></span>
+<span><span class="co">#&gt; 0.6056577 0.6056577</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="the-shape-this-feature-was-promised-in-was-wrong">The shape this feature was promised in was wrong<a class="anchor" aria-label="anchor" href="#the-shape-this-feature-was-promised-in-was-wrong"></a>
+</h3>
+<p>Earlier versions of this vignette said that
+<code><a href="../reference/mantel_test.html">mantel_test()</a></code> would gain a <code>streaming</code> argument.
+It cannot have one. <code><a href="../reference/mantel_test.html">mantel_test()</a></code> takes a
+<code>proximity</code>, and a <code>proximity</code> is a matrix that
+has already been built; a matrix that has already been built cannot be
+traversed <em>instead of</em> built. The saving is only available at the
+moment the object is constructed, so it belongs to the type of the input
+and not to a flag on the function. That is why the feature arrived as a
+constructor rather than as an argument.</p>
+</div>
+<div class="section level3">
+<h3 id="what-it-costs-which-is-not-nothing">What it costs, which is not nothing<a class="anchor" aria-label="anchor" href="#what-it-costs-which-is-not-nothing"></a>
+</h3>
+<p>Streaming buys memory with time, and the exchange rate is worse than
+it looks.</p>
+<p>The stored object is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mi>B</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">O(nB)</annotation></semantics></math>
+against the matrix’s
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false" form="prefix">(</mo><msup><mi>n</mi><mn>2</mn></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">O(n^2)</annotation></semantics></math>,
+but
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>O</mi><annotation encoding="application/x-tex">O</annotation></semantics></math>
+hides the constants, and below a certain size the stream is the
+<em>larger</em> object. Measured across fifteen cells, the leaf
+indicator costs 13.1 bytes per observation per tree, so the two are
+equal at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>≈</mo><mn>1.64</mn><mi>B</mi></mrow><annotation encoding="application/x-tex">n \approx 1.64B</annotation></semantics></math>
+and the stream is bigger below it: at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>100</mn></mrow><annotation encoding="application/x-tex">n = 100</annotation></semantics></math>
+with 500 trees it holds eight times what the matrix would. It was the
+larger object in 8 of those 15 cells. <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> shows both
+numbers, so this is checkable rather than something to reason about.</p>
+<p>Above the crossover the saving grows linearly, and at the sizes this
+vignette is about it is the whole game: carrying the measured constant
+out to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>100</mn><mo>,</mo><mn>000</mn></mrow><annotation encoding="application/x-tex">n = 100{,}000</annotation></semantics></math>
+with 500 trees puts the indicator at some 655 MB where the matrix would
+need 80 GB.</p>
+<p>The time is the other half. The dense path builds the matrix once and
+then indexes it; the streaming path manufactures every entry each time
+it wants one, and a permutation test wants all of them once per
+permutation. On the same grid the streamed alignment took up to 6 times
+the dense one and the streamed Mantel test up to 12.8 times, which at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>=</mo><mn>800</mn></mrow><annotation encoding="application/x-tex">n = 800</annotation></semantics></math>
+with 200 trees was 0.089 seconds per permutation. <code>n_perm</code> is
+therefore the knob that decides whether the answer arrives at all, and
+the block size is not: the same alignment took 2.09 seconds a row at a
+time and 0.069 seconds in one block, a factor of 30, for an answer that
+agreed to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>2</mn><mo>×</mo><msup><mn>10</mn><mrow><mi>−</mi><mn>13</mn></mrow></msup></mrow><annotation encoding="application/x-tex">2 \times 10^{-13}</annotation></semantics></math>
+throughout. Blocks are for fitting in memory. The default divides a 64
+MB budget by
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>.</p>
+</div>
+<div class="section level3">
+<h3 id="two-things-it-refuses">Two things it refuses<a class="anchor" aria-label="anchor" href="#two-things-it-refuses"></a>
+</h3>
+<p><code>method = "spearman"</code> and the partial variant both error
+rather than approximate. A Spearman correlation ranks the pairs against
+each other, and a rank is a statement about every pair at once, so it
+cannot be accumulated from blocks that have been thrown away. The
+partial variant needs the regression fitted before the residuals can be
+correlated, which is two traversals and a permutation carried through
+both. Neither is built, and both say so.</p>
+</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

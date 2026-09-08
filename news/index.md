@@ -1,5 +1,81 @@
 # Changelog
 
+## Proximum 1.1.0
+
+The streaming layer, which the previous release described as declared
+and deliberately not built. Everything here is additive: nothing that
+ran under 1.0.0 runs differently.
+
+### New
+
+- [`proximity_stream()`](../reference/proximity_stream.md) builds an
+  object that holds what a proximity matrix is made of rather than the
+  matrix. [`mantel_test()`](../reference/mantel_test.md),
+  [`cka()`](../reference/cka.md) and
+  [`rv_coefficient()`](../reference/cka.md) take it and manufacture the
+  matrix a block of rows at a time, accumulating the statistic and
+  discarding each block, so the object is never allocated. The streamed
+  answer is the dense answer: over the cells of
+  `inst/simulations/streaming-cost.R` the two agreed to within 1.8e-13
+  on the statistic, on every permuted statistic, and on the count of
+  usable pairs, in-bag and out-of-bag alike.
+- [`mantel_test()`](../reference/mantel_test.md),
+  [`cka()`](../reference/cka.md) and
+  [`rv_coefficient()`](../reference/cka.md) gain a `block_size`
+  argument, used only when the arguments are streams. The default
+  divides a 64 MB budget by the sample size.
+
+### Corrections to what 1.0.0 promised
+
+- **The shape the feature was promised in was wrong.** `README` and
+  [`vignette("large-n")`](../articles/large-n.md) said
+  [`mantel_test()`](../reference/mantel_test.md) would gain a
+  `streaming` argument. It cannot have one.
+  [`mantel_test()`](../reference/mantel_test.md) takes a `proximity`,
+  which is a matrix that has already been built, and a matrix that has
+  already been built cannot be traversed instead of built. The saving
+  exists only at the moment the object is constructed, so it belongs to
+  the type of the input rather than to a flag on the function, and the
+  feature arrived as a constructor.
+- **The saving is not a saving at every size.** The indicator is and the
+  matrix , which settles nothing about which is smaller here. Measured
+  over fifteen cells, the indicator costs 13.1 bytes per observation per
+  tree, so the two are equal at and below that the stream is the
+  **larger** object: it was, in 8 of those 15 cells.
+  [`print()`](https://rdrr.io/r/base/print.html) shows both figures side
+  by side rather than leaving it to be assumed.
+- **It is slower, and by more than “not faster” suggests.** The dense
+  path builds the matrix once and indexes it; the streaming path
+  manufactures every entry each time, once per permutation. Measured: up
+  to 6 times the dense cost for an alignment and up to 12.8 times for a
+  Mantel test. The block size is not the lever it looks like either,
+  since the same alignment took 2.09 seconds a row at a time and 0.069
+  seconds in one block for an answer that agreed to 2e-13.
+
+### Refused rather than approximated
+
+- `method = "spearman"` errors on the streaming path. A rank is a
+  statement about every other pair, so it cannot be accumulated from
+  blocks that have been discarded.
+- The partial variant errors on the streaming path: residualising needs
+  the regression fitted before the residuals can be correlated, which is
+  two traversals with the permutation carried through both.
+- An out-of-bag stream is refused an alignment with a message that does
+  not send the user to [`make_psd()`](../reference/make_psd.md), because
+  the repair is an eigendecomposition of the object the stream exists in
+  order not to build.
+- A stream paired with an allocated matrix is refused: both describe the
+  same observations, so the memory the stream saves has already been
+  spent.
+
+### Internal
+
+- `ensemble_inbag()` collects the two engines’ spellings of the
+  bootstrap counts, which three call sites now need. It replaces two
+  copies of the same branch in
+  [`as_proximity.randomForest()`](../reference/as_proximity.md) and
+  [`as_proximity.ranger()`](../reference/as_proximity.md).
+
 ## Proximum 1.0.0
 
 First release. The four phases of the roadmap are complete and the

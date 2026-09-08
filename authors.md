@@ -11,13 +11,13 @@ Source:
 [`DESCRIPTION`](https://github.com/agostinognasso/Proximum/blob/main/DESCRIPTION)
 
 Gnasso A (2026). *Proximum: Statistical Analysis of Ensemble Proximity
-Matrices*. R package version 1.0.0,
+Matrices*. R package version 1.1.0,
 <https://github.com/agostinognasso/Proximum>.
 
     @Manual{,
       title = {Proximum: Statistical Analysis of Ensemble Proximity Matrices},
       author = {Agostino Gnasso},
       year = {2026},
-      note = {R package version 1.0.0},
+      note = {R package version 1.1.0},
       url = {https://github.com/agostinognasso/Proximum},
     }

@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">Proximum</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -209,7 +209,7 @@ semi-definite, and here it is not:</p>
 <span>  oob   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/eigen.html" class="external-link">eigen</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">unclass</a></span><span class="op">(</span><span class="va">px_oob</span><span class="op">)</span>, symmetric <span class="op">=</span> <span class="cn">TRUE</span>, only.values <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">values</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt;         inbag           oob </span></span>
-<span><span class="co">#&gt; -9.601070e-15 -6.469597e-01</span></span></code></pre></div>
+<span><span class="co">#&gt; -1.265658e-14 -6.469597e-01</span></span></code></pre></div>
 <p>The in-bag minimum is zero up to rounding; the out-of-bag one is not
 close to it. <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> reports this rather than letting it
 pass silently:</p>

@@ -42,6 +42,10 @@
   by a proximity matrix
 - [`protest()`](protest.md) : Procrustes comparison of two proximity
   matrices
+- [`proximity_stream()`](proximity_stream.md)
+  [`print(`*`<proximity_stream>`*`)`](proximity_stream.md)
+  [`as.matrix(`*`<proximity_stream>`*`)`](proximity_stream.md) : A
+  proximity that is never allocated
 - [`sparsify()`](sparsify.md)
   [`print(`*`<proximity_sparse>`*`)`](sparsify.md) : Sparse
   representation of a proximity matrix
