@@ -55,7 +55,7 @@
 #'   rf <- randomForest::randomForest(
 #'     Species ~ ., data = iris, ntree = 200, keep.inbag = TRUE
 #'   )
-#'   px <- proximity(rf, newdata = iris, type = "oob")
+#'   px <- as_proximity(rf, newdata = iris, type = "oob")
 #'   summary(px)$euclidean          # FALSE: not a kernel
 #'   summary(make_psd(px))$euclidean # TRUE
 #' }

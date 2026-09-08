@@ -22,8 +22,9 @@
 #' reported by `summary()`.
 #'
 #' @section Two invariants that do not survive:
-#' `?proximity` promises a symmetric matrix with a unit diagonal, and this is
-#' not one, which is why a `proximity_nystrom` is its own class rather than a
+#' `?as_proximity` promises a symmetric matrix with a unit diagonal, and this
+#' is not one, which is why a `proximity_nystrom` is its own class rather than
+#' a
 #' `proximity`. \eqn{\tilde{P}_{ii} = \sum_k L_{ik}^2}, which equals one only
 #' when observation \eqn{i} is a landmark. The mean departure is reported by
 #' `summary()` and is the cheapest single measure of what the approximation

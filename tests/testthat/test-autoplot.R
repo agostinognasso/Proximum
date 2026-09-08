@@ -7,7 +7,7 @@ fit_iris <- function(ntree = 200L, ...) {
 
 iris_proximity <- function(type = "inbag", ntree = 200L) {
   fit <- if (type == "oob") fit_iris(ntree, keep.inbag = TRUE) else fit_iris(ntree)
-  proximity(fit, newdata = iris, type = type)
+  as_proximity(fit, newdata = iris, type = type)
 }
 
 # A plot that is never drawn proves nothing: the build is where a mapping to a
@@ -121,7 +121,7 @@ test_that("the Nystrom view reads the stored factor", {
 test_that("the stability view marks the median and the interval it holds", {
   set.seed(2)
   reps <- lapply(1:4, function(i) {
-    proximity(randomForest::randomForest(Species ~ ., data = iris, ntree = 100),
+    as_proximity(randomForest::randomForest(Species ~ ., data = iris, ntree = 100),
               newdata = iris)
   })
   s <- stability(reps)
@@ -137,7 +137,7 @@ test_that("the stability view marks the median and the interval it holds", {
 test_that("the agreement axis is named after the statistic that made it", {
   set.seed(3)
   reps <- lapply(1:3, function(i) {
-    proximity(randomForest::randomForest(Species ~ ., data = iris, ntree = 100),
+    as_proximity(randomForest::randomForest(Species ~ ., data = iris, ntree = 100),
               newdata = iris)
   })
 

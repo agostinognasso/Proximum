@@ -8,7 +8,7 @@ fit_iris <- function(ntree = 200L, keep.inbag = TRUE) {
 }
 
 test_that("in-bag proximity is a valid similarity matrix", {
-  px <- proximity(fit_iris(), newdata = iris)
+  px <- as_proximity(fit_iris(), newdata = iris)
 
   expect_s3_class(px, "proximity")
   expect_equal(dim(px), c(150L, 150L))
@@ -19,7 +19,7 @@ test_that("in-bag proximity is a valid similarity matrix", {
 })
 
 test_that("proximity attributes record the provenance of the matrix", {
-  px <- proximity(fit_iris(ntree = 50L), newdata = iris)
+  px <- as_proximity(fit_iris(ntree = 50L), newdata = iris)
 
   expect_identical(attr(px, "engine"), "randomForest")
   expect_equal(attr(px, "n_trees"), 50)
@@ -28,8 +28,8 @@ test_that("proximity attributes record the provenance of the matrix", {
 
 test_that("out-of-bag proximity differs from the in-bag one but tracks it", {
   fit <- fit_iris()
-  inbag <- proximity(fit, newdata = iris)
-  oob <- proximity(fit, newdata = iris, type = "oob")
+  inbag <- as_proximity(fit, newdata = iris)
+  oob <- as_proximity(fit, newdata = iris, type = "oob")
 
   expect_false(isTRUE(all.equal(unclass(inbag), unclass(oob))))
   expect_gt(
@@ -40,7 +40,7 @@ test_that("out-of-bag proximity differs from the in-bag one but tracks it", {
 
 test_that("pairs never simultaneously out-of-bag are NA, not zero", {
   # Three trees leave many pairs with an empty denominator.
-  px <- proximity(fit_iris(ntree = 3L), newdata = iris, type = "oob")
+  px <- as_proximity(fit_iris(ntree = 3L), newdata = iris, type = "oob")
 
   expect_true(anyNA(px))
   expect_true(all(diag(px) == 1))
@@ -51,13 +51,13 @@ test_that("out-of-bag proximity refuses forests that cannot supply it", {
   fit <- randomForest::randomForest(Species ~ ., data = iris, ntree = 10)
 
   expect_error(
-    proximity(fit, newdata = iris, type = "oob"),
+    as_proximity(fit, newdata = iris, type = "oob"),
     "keep.inbag"
   )
 })
 
 test_that("a forest without stored training data demands newdata", {
-  expect_error(proximity(fit_iris(ntree = 10L)), "`newdata` is required")
+  expect_error(as_proximity(fit_iris(ntree = 10L)), "`newdata` is required")
 })
 
 test_that("the stored proximity of randomForest is out-of-bag by default", {
@@ -70,9 +70,9 @@ test_that("the stored proximity of randomForest is out-of-bag by default", {
   )
 
   expect_identical(stored_prox_type(fit), "oob")
-  expect_error(proximity(fit), "stores an out-of-bag proximity matrix")
+  expect_error(as_proximity(fit), "stores an out-of-bag proximity matrix")
 
-  px <- proximity(fit, type = "oob")
+  px <- as_proximity(fit, type = "oob")
   expect_s3_class(px, "proximity")
   expect_identical(attr(px, "prox_type"), "oob")
 })
@@ -85,9 +85,9 @@ test_that("the stored proximity is in-bag when oob.prox is switched off", {
 
   expect_identical(stored_prox_type(fit), "inbag")
 
-  px <- proximity(fit)
+  px <- as_proximity(fit)
   expect_identical(attr(px, "prox_type"), "inbag")
-  expect_error(proximity(fit, type = "oob"), "stores an in-bag proximity matrix")
+  expect_error(as_proximity(fit, type = "oob"), "stores an in-bag proximity matrix")
 })
 
 test_that("the stored proximity matches what we recompute ourselves", {
@@ -98,7 +98,7 @@ test_that("the stored proximity matches what we recompute ourselves", {
 
   # The default fit stores the out-of-bag matrix; ours must reproduce it.
   expect_equal(
-    as.matrix(proximity(fit, type = "oob")),
+    as.matrix(as_proximity(fit, type = "oob")),
     unname(fit$proximity),
     ignore_attr = TRUE
   )
@@ -114,11 +114,11 @@ test_that("an undeterminable oob.prox is an error, not a guess", {
   )
 
   expect_true(is.na(stored_prox_type(fit)))
-  expect_error(proximity(fit), "undeterminable type")
+  expect_error(as_proximity(fit), "undeterminable type")
 })
 
 test_that("print counts missing pairs, not missing matrix cells", {
-  px <- proximity(fit_iris(ntree = 3L), newdata = iris, type = "oob")
+  px <- as_proximity(fit_iris(ntree = 3L), newdata = iris, type = "oob")
   n_pairs <- sum(is.na(px[upper.tri(px)]))
 
   expect_output(print(px), paste0("missing: ", n_pairs, " pairs"))
@@ -127,13 +127,13 @@ test_that("print counts missing pairs, not missing matrix cells", {
 
 test_that("out-of-bag proximity is only defined on the training data", {
   expect_error(
-    proximity(fit_iris(), newdata = iris[1:10, ], type = "oob"),
+    as_proximity(fit_iris(), newdata = iris[1:10, ], type = "oob"),
     "only defined on the training data"
   )
 })
 
 test_that("as.dist returns the sqrt-transformed lower triangle", {
-  px <- proximity(fit_iris(ntree = 50L), newdata = iris)
+  px <- as_proximity(fit_iris(ntree = 50L), newdata = iris)
   d <- as.dist(px)
 
   expect_s3_class(d, "dist")
@@ -142,7 +142,7 @@ test_that("as.dist returns the sqrt-transformed lower triangle", {
 })
 
 test_that("as.matrix strips the proximity class and attributes", {
-  px <- proximity(fit_iris(ntree = 50L), newdata = iris)
+  px <- as_proximity(fit_iris(ntree = 50L), newdata = iris)
   m <- as.matrix(px)
 
   expect_true(is.matrix(m))
@@ -151,7 +151,7 @@ test_that("as.matrix strips the proximity class and attributes", {
 })
 
 test_that("summary reports diagnostics and detects a Euclidean embedding", {
-  s <- summary(proximity(fit_iris(ntree = 50L), newdata = iris))
+  s <- summary(as_proximity(fit_iris(ntree = 50L), newdata = iris))
 
   expect_s3_class(s, "summary.proximity")
   expect_identical(s$n, 150L)
@@ -168,27 +168,27 @@ test_that("in-bag proximity is a kernel and out-of-bag proximity is not", {
     min(eigen(unclass(px), symmetric = TRUE, only.values = TRUE)$values)
   }
 
-  expect_gt(min_eigen(proximity(fit, newdata = iris)), -1e-8)
-  expect_lt(min_eigen(proximity(fit, newdata = iris, type = "oob")), -1e-3)
+  expect_gt(min_eigen(as_proximity(fit, newdata = iris)), -1e-8)
+  expect_lt(min_eigen(as_proximity(fit, newdata = iris, type = "oob")), -1e-3)
 
-  expect_true(summary(proximity(fit, newdata = iris))$euclidean)
-  expect_false(summary(proximity(fit, newdata = iris, type = "oob"))$euclidean)
+  expect_true(summary(as_proximity(fit, newdata = iris))$euclidean)
+  expect_false(summary(as_proximity(fit, newdata = iris, type = "oob"))$euclidean)
 })
 
 test_that("summary skips the eigen decomposition above max_eigen", {
-  s <- summary(proximity(fit_iris(ntree = 50L), newdata = iris), max_eigen = 10L)
+  s <- summary(as_proximity(fit_iris(ntree = 50L), newdata = iris), max_eigen = 10L)
 
   expect_true(is.na(s$euclidean))
 })
 
 test_that("an argument the method does not have is refused, not swallowed", {
-  # `proximity(rf, newdata = df, sparse = TRUE, threshold = 0.05)` is what
+  # `as_proximity(rf, newdata = df, sparse = TRUE, threshold = 0.05)` is what
   # `vignette("large-n")` used to call, and without the guard it came back a
   # dense matrix as though the request had been honoured.
   fit <- fit_iris(ntree = 10L)
 
-  expect_error(proximity(fit, newdata = iris, sparse = TRUE), "`sparse`")
-  expect_error(proximity(fit, newdata = iris, sparse = TRUE), "sparsify")
-  expect_error(proximity(fit, newdata = iris, type = "inbag", TRUE),
+  expect_error(as_proximity(fit, newdata = iris, sparse = TRUE), "`sparse`")
+  expect_error(as_proximity(fit, newdata = iris, sparse = TRUE), "sparsify")
+  expect_error(as_proximity(fit, newdata = iris, type = "inbag", TRUE),
                "1 argument")
 })

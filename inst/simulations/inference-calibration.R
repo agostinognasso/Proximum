@@ -75,9 +75,9 @@ one_replicate <- function(i, type, related, ntree) {
   attempt <- try({
     d1 <- simulate_data(N)
     d2 <- if (related) d1 else simulate_data(N)
-    p1 <- proximity(grow(d1, seeds[1L], ntree, maxnodes = 8L), newdata = d1,
+    p1 <- as_proximity(grow(d1, seeds[1L], ntree, maxnodes = 8L), newdata = d1,
                     type = type)
-    p2 <- proximity(grow(d2, seeds[2L], ntree), newdata = d2, type = type)
+    p2 <- as_proximity(grow(d2, seeds[2L], ntree), newdata = d2, type = type)
     res <- mantel_test(p1, p2, n_perm = N_PERM)
 
     # `cka()` refuses out-of-bag input, so the alignment is measured on the

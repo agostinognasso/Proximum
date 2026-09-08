@@ -92,9 +92,9 @@ one_replicate <- function(i, type, related, ntree) {
 
   d1 <- simulate_data(N)
   d2 <- if (related) d1 else simulate_data(N)
-  p1 <- attempt(proximity(grow(d1, seeds[1L], ntree, maxnodes = 8L),
+  p1 <- attempt(as_proximity(grow(d1, seeds[1L], ntree, maxnodes = 8L),
                           newdata = d1, type = type))
-  p2 <- attempt(proximity(grow(d2, seeds[2L], ntree), newdata = d2,
+  p2 <- attempt(as_proximity(grow(d2, seeds[2L], ntree), newdata = d2,
                           type = type))
   if (is.null(p1) || is.null(p2)) return(NULL)
 

@@ -7,7 +7,7 @@ fit_iris <- function(ntree = 200L, ...) {
 
 iris_proximity <- function(type = "inbag", ntree = 200L) {
   fit <- if (type == "oob") fit_iris(ntree, keep.inbag = TRUE) else fit_iris(ntree)
-  proximity(fit, newdata = iris, type = type)
+  as_proximity(fit, newdata = iris, type = type)
 }
 
 test_that("the object is not a proximity and says what it is", {

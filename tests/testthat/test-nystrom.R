@@ -5,7 +5,7 @@ iris_forest <- function(ntree = 200L) {
   randomForest::randomForest(Species ~ ., data = iris, ntree = ntree)
 }
 
-exact_proximity <- function(fit) as.matrix(proximity(fit, newdata = iris))
+exact_proximity <- function(fit) as.matrix(as_proximity(fit, newdata = iris))
 
 relative_error <- function(a, b) norm(a - b, "F") / norm(b, "F")
 
@@ -152,7 +152,7 @@ test_that("an unusable engine is named", {
 test_that("the pairwise statistics refuse it and protest does not", {
   fit <- iris_forest()
   nys <- nystrom(fit, iris, landmarks = 40)
-  px <- proximity(fit, newdata = iris)
+  px <- as_proximity(fit, newdata = iris)
 
   expect_error(mantel_test(nys, px, n_perm = 9), "Nystrom approximation")
   expect_error(cka(nys, px), "Nystrom approximation")

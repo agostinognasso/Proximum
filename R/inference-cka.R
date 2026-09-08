@@ -50,8 +50,8 @@
 #'                                       ntree = 100, maxnodes = 4)
 #' deep <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
 #'                                    ntree = 100)
-#' cka(proximity(shallow, newdata = iris[rows, ]),
-#'     proximity(deep, newdata = iris[rows, ]))
+#' cka(as_proximity(shallow, newdata = iris[rows, ]),
+#'     as_proximity(deep, newdata = iris[rows, ]))
 #' @seealso [mantel_test()] for the same comparison with a p-value,
 #'   [make_psd()] for the correction these functions require.
 #' @export

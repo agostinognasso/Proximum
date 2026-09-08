@@ -63,8 +63,8 @@
 #'                                       ntree = 100, maxnodes = 4)
 #' deep <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
 #'                                    ntree = 100)
-#' protest(proximity(shallow, newdata = iris[rows, ]),
-#'         proximity(deep, newdata = iris[rows, ]), n_perm = 99)
+#' protest(as_proximity(shallow, newdata = iris[rows, ]),
+#'         as_proximity(deep, newdata = iris[rows, ]), n_perm = 99)
 #' @seealso [mantel_test()] for the same comparison on the pairwise values,
 #'   [permanova()] for a partition of one matrix rather than a comparison of
 #'   two.

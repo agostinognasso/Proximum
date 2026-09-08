@@ -59,7 +59,7 @@
 #' set.seed(1)
 #' replicates <- lapply(1:4, function(i) {
 #'   rf <- randomForest::randomForest(Species ~ ., data = iris, ntree = 100)
-#'   proximity(rf, newdata = iris)
+#'   as_proximity(rf, newdata = iris)
 #' })
 #' stability(replicates)
 #' @export

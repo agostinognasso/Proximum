@@ -7,7 +7,7 @@ iris_forest <- function(ntree = 200L, ...) {
 
 iris_proximity <- function(type = "inbag") {
   fit <- if (type == "oob") iris_forest(keep.inbag = TRUE) else iris_forest()
-  proximity(fit, newdata = iris, type = type)
+  as_proximity(fit, newdata = iris, type = type)
 }
 
 # Two configurations of the same points differ by a rotation and by the sign of
@@ -43,7 +43,7 @@ test_that("the factored method agrees with the dense one when it should", {
   # computing the same configuration by different arithmetic and any gap is a
   # mistake in one of them.
   fit <- iris_forest()
-  px <- proximity(fit, newdata = iris)
+  px <- as_proximity(fit, newdata = iris)
   nys <- nystrom(fit, iris, landmarks = nrow(iris))
 
   expect_lt(gram_difference(embedding(nys, k = 3), embedding(px, k = 3)), 1e-8)
@@ -97,7 +97,7 @@ test_that("protest reports which of its arguments had no configuration", {
 
 test_that("protest compares a factored object without reconstructing it", {
   fit <- iris_forest()
-  px <- proximity(fit, newdata = iris)
+  px <- as_proximity(fit, newdata = iris)
   exact <- nystrom(fit, iris, landmarks = nrow(iris))
 
   # An exact approximation and the matrix it approximates are the same

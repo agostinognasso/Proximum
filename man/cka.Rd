@@ -68,8 +68,8 @@ shallow <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
                                       ntree = 100, maxnodes = 4)
 deep <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
                                    ntree = 100)
-cka(proximity(shallow, newdata = iris[rows, ]),
-    proximity(deep, newdata = iris[rows, ]))
+cka(as_proximity(shallow, newdata = iris[rows, ]),
+    as_proximity(deep, newdata = iris[rows, ]))
 \dontshow{\}) # examplesIf}
 }
 \seealso{

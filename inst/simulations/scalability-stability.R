@@ -103,7 +103,7 @@ cat("\n=== 1. nystrom(): approximation error against the exact matrix ===\n\n")
 nystrom_error <- function(replicate, n, m, process) {
   data <- make_data(process, n, seed = 1000L + replicate)
   fit <- fit_forest(data, ntree = 300L, seed = 2000L + replicate)
-  exact <- as.matrix(proximity(fit, newdata = data))
+  exact <- as.matrix(as_proximity(fit, newdata = data))
   set.seed(3000L + replicate)
   approximation <- nystrom(fit, data, landmarks = m)
   c(
@@ -144,7 +144,7 @@ cat("\n=== 2. nystrom(): stratified against simple landmark samples ===\n\n")
 stratified_gain <- function(replicate, n, m, process = "unbalanced") {
   data <- make_data(process, n, seed = 4000L + replicate)
   fit <- fit_forest(data, ntree = 300L, seed = 5000L + replicate)
-  exact <- as.matrix(proximity(fit, newdata = data))
+  exact <- as.matrix(as_proximity(fit, newdata = data))
   minority_level <- names(which.min(table(data$y)))
   minority_rows <- which(data$y == minority_level)
 
@@ -208,7 +208,7 @@ cat("\n=== 3. sparsify(): density against n, and what the transform does ===\n\n
 sparsity_cell <- function(replicate, n, type) {
   data <- make_data("moderate", n, seed = 7000L + replicate)
   fit <- fit_forest(data, ntree = 500L, seed = 8000L + replicate)
-  px <- proximity(fit, newdata = data, type = type)
+  px <- as_proximity(fit, newdata = data, type = type)
   P <- as.matrix(px)
   off <- P[upper.tri(P)]
   dissimilarity <- sqrt(1 - P)
@@ -322,14 +322,14 @@ stability_cell <- function(replicate, situation, statistic) {
   replicates <- switch(
     situation,
     same = lapply(1:4, function(i) {
-      proximity(fit_forest(data, 200L, seed = 12000L + replicate * 10L + i),
+      as_proximity(fit_forest(data, 200L, seed = 12000L + replicate * 10L + i),
                 newdata = data)
     }),
     depth = lapply(1:4, function(i) {
       set.seed(12000L + replicate * 10L + i)
       fit <- randomForest(y ~ ., data = data, ntree = 200L,
                           maxnodes = c(2L, 4L, 16L, 64L)[i])
-      proximity(fit, newdata = data)
+      as_proximity(fit, newdata = data)
     }),
     # Different predictors, the same response. The forests are not replicates
     # of each other, but they are not unrelated either: both carry the class
@@ -338,14 +338,14 @@ stability_cell <- function(replicate, situation, statistic) {
     shared_response = lapply(1:4, function(i) {
       other <- make_data("moderate", 300L, seed = 13000L + replicate * 10L + i)
       other$y <- data$y
-      proximity(fit_forest(other, 200L, seed = 14000L + replicate * 10L + i),
+      as_proximity(fit_forest(other, 200L, seed = 14000L + replicate * 10L + i),
                 newdata = other)
     }),
     # Nothing in common at all, which is the floor each statistic should
     # report.
     unrelated = lapply(1:4, function(i) {
       other <- make_data("moderate", 300L, seed = 15000L + replicate * 10L + i)
-      proximity(fit_forest(other, 200L, seed = 16000L + replicate * 10L + i),
+      as_proximity(fit_forest(other, 200L, seed = 16000L + replicate * 10L + i),
                 newdata = other)
     })
   )

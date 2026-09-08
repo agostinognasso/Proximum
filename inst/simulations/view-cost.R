@@ -47,7 +47,7 @@ generate <- function(n, seed) {
 forest_proximity <- function(n, n_trees, seed) {
   data <- generate(n, seed)
   fit <- randomForest(y ~ ., data = data, ntree = n_trees)
-  proximity(fit, newdata = data)
+  as_proximity(fit, newdata = data)
 }
 
 # --- 1. what the seriation does with the ties --------------------------------

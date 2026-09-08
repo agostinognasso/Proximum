@@ -37,8 +37,8 @@ rf_shallow <- randomForest(Species ~ ., data = df, ntree = 300, maxnodes = 4,
 set.seed(3)
 rf_deep <- randomForest(Species ~ ., data = df, ntree = 300, keep.inbag = TRUE)
 
-px1 <- proximity(rf_shallow, newdata = df)
-px2 <- proximity(rf_deep, newdata = df)
+px1 <- as_proximity(rf_shallow, newdata = df)
+px2 <- as_proximity(rf_deep, newdata = df)
 px1
 ```
 
@@ -64,7 +64,7 @@ jointly out of bag has no proximity to correlate. The test uses what is defined
 and reports how much that was.
 
 ```{r oob, eval = has_rf}
-oob <- proximity(rf_deep, newdata = df, type = "oob")
+oob <- as_proximity(rf_deep, newdata = df, type = "oob")
 mantel_test(px1, oob, n_perm = 999)$parameter
 ```
 
@@ -197,7 +197,7 @@ it was refused in none.
 
 ```{r refuse_undefined, error = TRUE, eval = has_rf}
 small <- randomForest(Species ~ ., data = df, ntree = 15, keep.inbag = TRUE)
-permanova(proximity(small, newdata = df, type = "oob"), ~ Species, data = df)
+permanova(as_proximity(small, newdata = df, type = "oob"), ~ Species, data = df)
 ```
 
 ## Still to come
@@ -205,5 +205,5 @@ permanova(proximity(small, newdata = df, type = "oob"), ~ Species, data = df)
 Phase F2 is complete. What is not is the motivating case underneath all of it:
 `e2tree` approximates a forest with a single tree, and whether that tree
 preserves the forest's view of the data is exactly a question about two
-proximity matrices. That comparison needs a `proximity()` method for `e2tree`
+proximity matrices. That comparison needs a `as_proximity()` method for `e2tree`
 objects, which does not exist yet.

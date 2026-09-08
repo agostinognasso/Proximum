@@ -20,8 +20,8 @@ deep_forest <- function(rows, ntree = 200L) {
 two_proximities <- function(type = "inbag", ntree = 200L) {
   rows <- sample_rows()
   list(
-    proximity(shallow_forest(rows, ntree), newdata = iris[rows, ], type = type),
-    proximity(deep_forest(rows, ntree), newdata = iris[rows, ], type = type)
+    as_proximity(shallow_forest(rows, ntree), newdata = iris[rows, ], type = type),
+    as_proximity(deep_forest(rows, ntree), newdata = iris[rows, ], type = type)
   )
 }
 

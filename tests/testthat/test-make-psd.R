@@ -5,13 +5,13 @@ oob_proximity <- function(ntree = 200L) {
   fit <- randomForest::randomForest(
     Species ~ ., data = iris, ntree = ntree, keep.inbag = TRUE
   )
-  proximity(fit, newdata = iris, type = "oob")
+  as_proximity(fit, newdata = iris, type = "oob")
 }
 
 inbag_proximity <- function(ntree = 100L) {
   set.seed(1)
   fit <- randomForest::randomForest(Species ~ ., data = iris, ntree = ntree)
-  proximity(fit, newdata = iris)
+  as_proximity(fit, newdata = iris)
 }
 
 min_eigen <- function(x) {

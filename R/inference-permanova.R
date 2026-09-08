@@ -91,7 +91,7 @@
 #' rows <- sample(nrow(iris), 60)
 #' rf <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
 #'                                  ntree = 100, keep.inbag = TRUE)
-#' permanova(proximity(rf, newdata = iris[rows, ]), ~ Species,
+#' permanova(as_proximity(rf, newdata = iris[rows, ]), ~ Species,
 #'           data = iris[rows, ], n_perm = 99)
 #' @seealso [protest()] for a comparison of two matrices rather than a
 #'   partition of one, [as_dissimilarity()] for the transform.

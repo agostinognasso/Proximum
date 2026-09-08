@@ -146,7 +146,7 @@ naming it. The other three views need neither.
 \dontshow{if (requireNamespace("randomForest", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 set.seed(1)
 rf <- randomForest::randomForest(Species ~ ., data = iris, ntree = 200)
-px <- proximity(rf, newdata = iris)
+px <- as_proximity(rf, newdata = iris)
 autoplot(px, type = "mds", colour = iris$Species)
 \dontshow{\}) # examplesIf}
 }

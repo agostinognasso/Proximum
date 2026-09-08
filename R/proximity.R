@@ -17,7 +17,7 @@
 #' @param object A fitted tree ensemble.
 #' @param newdata Data frame on which proximities are computed. Required
 #'   unless `object` already carries a proximity matrix (see Details of
-#'   [proximity.randomForest()]).
+#'   [as_proximity.randomForest()]).
 #' @param type Either `"inbag"` (average over all trees) or `"oob"` (average
 #'   over the trees for which both observations are out-of-bag).
 #' @param ... Arguments passed to methods.
@@ -26,14 +26,25 @@
 #'   unit diagonal, carrying the attributes `engine`, `n_trees` and
 #'   `prox_type`.
 #'
+#' @section Why the name is `as_proximity()`:
+#' `e2tree`, which builds an explainable tree on the same similarity structure
+#' and is the package most likely to be attached alongside this one, exports a
+#' `proximity()` of its own. Two generics of the same name mask each other in
+#' the order the packages were attached, and the one the user gets is then a
+#' property of their `library()` calls rather than of what they asked for. The
+#' `as_` prefix also says what the function does: it coerces a fitted ensemble
+#' into an object of class `proximity`, the way `as.dist()` coerces into a
+#' `dist`.
+#'
 #' @seealso [as.dist.proximity()] to obtain the induced dissimilarity,
-#'   [summary.proximity()] for diagnostics.
+#'   [summary.proximity()] for diagnostics, [as_proximity.e2tree()] for the
+#'   method that reads an `e2tree` fit.
 #' @export
-proximity <- function(object, ...) {
-  UseMethod("proximity")
+as_proximity <- function(object, ...) {
+  UseMethod("as_proximity")
 }
 
-#' @describeIn proximity Method for forests fitted with
+#' @describeIn as_proximity Method for forests fitted with
 #'   `randomForest::randomForest()`.
 #'
 #'   `randomForest` does not store its training data, so `newdata` must be
@@ -48,12 +59,12 @@ proximity <- function(object, ...) {
 #'
 #'   Using `type = "oob"` requires `keep.inbag = TRUE` at fitting time.
 #' @export
-proximity.randomForest <- function(object,
-                                   newdata = NULL,
-                                   type = c("inbag", "oob"),
-                                   ...) {
+as_proximity.randomForest <- function(object,
+                                      newdata = NULL,
+                                      type = c("inbag", "oob"),
+                                      ...) {
   type <- match.arg(type)
-  reject_unused(..., what = "proximity", advice = storage_advice)
+  reject_unused(..., what = "as_proximity", advice = storage_advice)
 
   if (is.null(newdata)) {
     if (!is.null(object$proximity)) {
@@ -116,7 +127,7 @@ proximity.randomForest <- function(object,
   )
 }
 
-#' @describeIn proximity Method for forests fitted with `ranger::ranger()`.
+#' @describeIn as_proximity Method for forests fitted with `ranger::ranger()`.
 #'
 #'   Requires the forest to have been kept (`write.forest = TRUE`, the default),
 #'   and `keep.inbag = TRUE` for `type = "oob"`. `ranger` stores the bootstrap
@@ -128,9 +139,10 @@ proximity.randomForest <- function(object,
 #'   represent the data the same way is a question the inference layer of phase
 #'   F2 can answer.
 #' @export
-proximity.ranger <- function(object, newdata = NULL, type = c("inbag", "oob"), ...) {
+as_proximity.ranger <- function(object, newdata = NULL,
+                                type = c("inbag", "oob"), ...) {
   type <- match.arg(type)
-  reject_unused(..., what = "proximity", advice = storage_advice)
+  reject_unused(..., what = "as_proximity", advice = storage_advice)
 
   if (is.null(newdata)) {
     stop(
@@ -203,7 +215,7 @@ stored_prox_type <- function(object) {
 #'
 #' `...` is in the signature so that methods can differ, not so that a
 #' misspelled argument can be swallowed. `vignettes/large-n.Rmd` calls
-#' `proximity(rf, newdata = df, sparse = TRUE, threshold = 0.05)` against a
+#' `as_proximity(rf, newdata = df, sparse = TRUE, threshold = 0.05)` against a
 #' scalability layer that does not exist yet, and without this guard the call
 #' returns a dense matrix as though it had been honoured. A wrong answer is
 #' worse than an error, and the argument names are the user's clue.
@@ -300,7 +312,7 @@ new_proximity <- function(x, engine, n_trees, prox_type) {
 }
 
 #' @param x A `proximity` object.
-#' @rdname proximity
+#' @rdname as_proximity
 #' @export
 print.proximity <- function(x, ...) {
   cat("<proximity>", nrow(x), "x", ncol(x), "\n")
@@ -319,7 +331,7 @@ print.proximity <- function(x, ...) {
   invisible(x)
 }
 
-#' @rdname proximity
+#' @rdname as_proximity
 #' @export
 as.matrix.proximity <- function(x, ...) {
   attributes(x) <- list(dim = dim(x), dimnames = dimnames(x))
@@ -409,6 +421,6 @@ print.summary.proximity <- function(x, ...) {
 
 storage_advice <- paste(
   "Proximities are computed densely, and neither storage form is reachable",
-  "through `proximity()`: pass the result to `sparsify()`, or build the",
+  "through `as_proximity()`: pass the result to `sparsify()`, or build the",
   "approximation with `nystrom()`."
 )

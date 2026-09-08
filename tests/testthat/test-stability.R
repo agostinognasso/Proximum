@@ -6,7 +6,7 @@ iris_replicates <- function(n_replicates = 4L, ntree = 100L, seed = 1L) {
   lapply(seq_len(n_replicates), function(i) {
     fit <- randomForest::randomForest(Species ~ ., data = iris, ntree = ntree,
                                       keep.inbag = TRUE)
-    proximity(fit, newdata = iris)
+    as_proximity(fit, newdata = iris)
   })
 }
 
@@ -38,12 +38,12 @@ test_that("replicates of one ensemble agree more than forests of different depth
   # The statistic has to be able to tell the two situations apart, or the
   # interval it reports is measuring nothing.
   set.seed(2)
-  shallow <- proximity(
+  shallow <- as_proximity(
     randomForest::randomForest(Species ~ ., data = iris, ntree = 100,
                                maxnodes = 2L),
     newdata = iris
   )
-  deep <- proximity(
+  deep <- as_proximity(
     randomForest::randomForest(Species ~ ., data = iris, ntree = 100),
     newdata = iris
   )
@@ -68,7 +68,7 @@ test_that("the interval brackets the median and narrows with the level", {
 test_that("the arguments are checked before anything is compared", {
   reps <- iris_replicates(2L)
   set.seed(3)
-  smaller <- proximity(
+  smaller <- as_proximity(
     randomForest::randomForest(Species ~ ., data = iris[1:120, ], ntree = 50),
     newdata = iris[1:120, ]
   )
@@ -87,7 +87,7 @@ test_that("the kernel statistic inherits the refusal of an indefinite input", {
   oob <- lapply(1:2, function(i) {
     fit <- randomForest::randomForest(Species ~ ., data = iris, ntree = 300,
                                       keep.inbag = TRUE)
-    proximity(fit, newdata = iris, type = "oob")
+    as_proximity(fit, newdata = iris, type = "oob")
   })
 
   expect_error(stability(oob, statistic = "cka"), "positive semi-definite")

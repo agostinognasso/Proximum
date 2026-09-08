@@ -36,7 +36,7 @@ rf <- randomForest::randomForest(
   Species ~ ., data = iris, ntree = 200, keep.inbag = TRUE
 )
 
-px <- proximity(rf, newdata = iris)
+px <- as_proximity(rf, newdata = iris)
 px
 ```
 
@@ -52,7 +52,7 @@ refuses to relabel the matrix behind your back:
 rf_stored <- randomForest::randomForest(
   Species ~ ., data = iris, ntree = 50, proximity = TRUE
 )
-proximity(rf_stored) # asks for in-bag; the forest has out-of-bag
+as_proximity(rf_stored) # asks for in-bag; the forest has out-of-bag
 ```
 
 ## Diagnostics
@@ -79,7 +79,7 @@ Restricting the average to the trees for which both observations are
 out-of-bag removes that bias.
 
 ```{r, eval = has_rf}
-px_oob <- proximity(rf, newdata = iris, type = "oob")
+px_oob <- as_proximity(rf, newdata = iris, type = "oob")
 px_oob
 ```
 
@@ -99,7 +99,7 @@ set.seed(1)
 small <- randomForest::randomForest(
   Species ~ ., data = iris, ntree = 3, keep.inbag = TRUE
 )
-sum(is.na(proximity(small, newdata = iris, type = "oob")))
+sum(is.na(as_proximity(small, newdata = iris, type = "oob")))
 ```
 
 ## The out-of-bag proximity is not a kernel
@@ -174,7 +174,7 @@ out-of-bag handling:
 ```{r, eval = requireNamespace("ranger", quietly = TRUE)}
 set.seed(1)
 rg <- ranger::ranger(Species ~ ., data = iris, num.trees = 200, keep.inbag = TRUE)
-proximity(rg, newdata = iris)
+as_proximity(rg, newdata = iris)
 ```
 
 Because both engines produce the same object, "do two implementations of the

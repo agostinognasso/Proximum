@@ -14,8 +14,8 @@ forest <- function(rows, seed, ntree = 200L, maxnodes = NULL) {
 inbag_pair <- function() {
   rows <- sample_rows()
   list(
-    proximity(forest(rows, 2L, maxnodes = 4L), newdata = iris[rows, ]),
-    proximity(forest(rows, 3L), newdata = iris[rows, ])
+    as_proximity(forest(rows, 2L, maxnodes = 4L), newdata = iris[rows, ]),
+    as_proximity(forest(rows, 3L), newdata = iris[rows, ])
   )
 }
 
@@ -64,7 +64,7 @@ test_that("an out-of-bag proximity is refused, and the repair is named", {
   # The refusal is the point: an alignment on an indefinite matrix would return
   # a number outside [0, 1] without saying so.
   rows <- sample_rows()
-  oob <- proximity(forest(rows, 2L), newdata = iris[rows, ], type = "oob")
+  oob <- as_proximity(forest(rows, 2L), newdata = iris[rows, ], type = "oob")
 
   expect_error(cka(oob, oob), "not positive semi-definite")
   expect_error(cka(oob, oob), "make_psd")
@@ -73,7 +73,7 @@ test_that("an out-of-bag proximity is refused, and the repair is named", {
 
 test_that("a repaired out-of-bag proximity is accepted", {
   rows <- sample_rows()
-  oob <- proximity(forest(rows, 2L), newdata = iris[rows, ], type = "oob")
+  oob <- as_proximity(forest(rows, 2L), newdata = iris[rows, ], type = "oob")
   repaired <- make_psd(oob)
 
   expect_equal(cka(repaired, repaired), 1)

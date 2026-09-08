@@ -75,8 +75,8 @@ shallow <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
                                       ntree = 100, maxnodes = 4)
 deep <- randomForest::randomForest(Species ~ ., data = iris[rows, ],
                                    ntree = 100)
-mantel_test(proximity(shallow, newdata = iris[rows, ]),
-            proximity(deep, newdata = iris[rows, ]), n_perm = 99)
+mantel_test(as_proximity(shallow, newdata = iris[rows, ]),
+            as_proximity(deep, newdata = iris[rows, ]), n_perm = 99)
 \dontshow{\}) # examplesIf}
 }
 \seealso{

@@ -13,7 +13,7 @@ forest <- function(rows, ntree = 200L) {
 
 a_proximity <- function(type = "inbag", ntree = 200L) {
   rows <- sample_rows()
-  proximity(forest(rows, ntree), newdata = iris[rows, ], type = type)
+  as_proximity(forest(rows, ntree), newdata = iris[rows, ], type = type)
 }
 
 design <- function() {
