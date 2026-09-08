@@ -13,7 +13,7 @@ version](https://img.shields.io/github/r-package/v/agostinognasso/Proximum?label
 [![License:
 MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Lifecycle:
-experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 <!-- badges: end -->
 
 Statistical analysis of the proximity matrices that tree ensembles
@@ -487,12 +487,18 @@ repair that happens to you.
 
 ## Status
 
-Early development, pre-CRAN. Phases F1 to F4 are done: extraction from
-`randomForest`, `ranger` and `e2tree`, the transforms and diagnostics,
-the positive semi-definite repair, the inference layer, the scalability
-and stability layers, and the plots. What is declared and not provided
-is the `streaming` argument that `vignette("large-n")` describes and
-says so about.
+Version 1.0.0, and not yet on CRAN. The four phases of the roadmap are
+complete and the interface is settled: extraction from `randomForest`,
+`ranger` and `e2tree`, the transforms and the metric diagnostics, the
+positive semi-definite repair, the inference layer, the scalability and
+stability layers, and the plots.
+
+The `stable` badge is a statement about the interface rather than about
+the number of users. `as_proximity()` was the last name to move, and it
+moved so that this one would not have to; from here a breaking change
+goes through a deprecation cycle. What is declared and deliberately not
+provided is the `streaming` argument that `vignette("large-n")`
+describes and says so about.
 
 | Phase | Content | State |
 |----|----|----|

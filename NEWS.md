@@ -1,4 +1,10 @@
-# Proximum 0.0.0.9000
+# Proximum 1.0.0
+
+First release. The four phases of the roadmap are complete and the interface is
+settled: `as_proximity()` was the last name to move, and it moved so that this
+one would not have to. Breaking changes from here go through a deprecation
+cycle, which is what the `stable` badge is a promise about.
+
 
 ## New
 
