@@ -27,6 +27,13 @@ upload form. The FTP route win-builder documents is refused from the network
 this was prepared on, which is a property of the network rather than of the
 package.
 
+win-builder, R Under development (2026-09-08 r90509 ucrt), Windows Server 2022:
+
+0 errors | 0 warnings | 1 note
+
+The note is the `CRAN incoming feasibility` one discussed below. Examples,
+tests, vignette re-building and both versions of the manual all came back OK.
+
 R-hub has not been used. The Windows R-devel cell it would have covered is in
 the GitHub Actions matrix above.
 
@@ -34,9 +41,11 @@ the GitHub Actions matrix above.
 
 * The package name is capitalised. It is a proper noun rather than a word, and
   no CRAN package differs from it only in case.
-* A spell checker run over the Description flags `Nystrom` and `ggplot2`. Both
-  are correct. `Nystrom` is the surname in the Nystrom method, written without
-  the umlaut so that the sources stay ASCII; `ggplot2` is a package name.
+* The incoming check flags two words in the Description as possibly misspelled,
+  and both are correct. `Nystrom` (17:5) is the surname in the Nystrom method,
+  written without the umlaut so that the sources stay ASCII. `seriated`
+  (21:28) is the term for a matrix whose rows and columns have been reordered
+  by seriation, which is what the heatmap in `autoplot()` draws.
 * `inst/simulations/` ships five scripts that are not run at check time and are
   not needed to use the package. They are the provenance of every quantitative
   claim in the documentation: no number appears in a help page or a vignette
